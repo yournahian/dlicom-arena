@@ -54,23 +54,28 @@ html, body {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background-color: var(--bg-deep);
+  position: fixed;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  background: #000;
   color: var(--text-main);
   font-family: var(--font-ui);
   font-size: 15px;
   line-height: 1.4;
-  touch-action: manipulation;
 }
 
 /* 3D WebGL Canvas Layer */
-#game-canvas {
+canvas, #game-canvas {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1;
+  width: 100vw !important;
+  height: 100vh !important;
   display: block;
+  touch-action: none;
+  z-index: 1;
 }
 
 /* Atmospheric Vignette Overlays */
@@ -3163,137 +3168,363 @@ body.mode-tdm .hud-br-inventory {
 }
 
 /* ==========================================================================
-   8. MOBILE TOUCH HUD
+   8. MOBILE TOUCH HUD (PUBG MOBILE & FREE FIRE DUAL-ZONE ENGINE)
    ========================================================================== */
 .mobile-hud {
-  position: absolute;
+  position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 60;
+  z-index: 100;
+  touch-action: none;
 }
 
-.touch-zone {
-  position: absolute;
-  pointer-events: auto;
+/* Universal Touch Button Directives */
+.touch-action-btn {
+  pointer-events: auto !important;
+  touch-action: none !important;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
 }
 
-.joystick-zone {
-  bottom: 30px;
-  left: 30px;
-  width: 150px;
-  height: 150px;
-}
-
+/* Dynamic Floating Virtual Joystick */
 .joystick-base {
-  width: 120px;
-  height: 120px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 2px solid rgba(0, 246, 255, 0.3);
+  position: fixed;
+  width: 124px;
+  height: 124px;
+  background: radial-gradient(circle, rgba(0, 246, 255, 0.08) 0%, rgba(3, 7, 18, 0.65) 100%);
+  border: 2px solid rgba(0, 246, 255, 0.38);
   border-radius: 50%;
-  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 105;
+  box-shadow: 0 0 24px rgba(0, 246, 255, 0.22), inset 0 0 16px rgba(0, 246, 255, 0.12);
+  transition: opacity 0.2s ease;
+  left: 90px;
+  bottom: 80px;
+  opacity: 0.35;
 }
 
 .joystick-thumb {
-  width: 50px;
-  height: 50px;
-  background: var(--cyan);
+  width: 52px;
+  height: 52px;
+  background: radial-gradient(circle, #00f6ff 30%, #0284c7 100%);
+  border: 2.5px solid #ffffff;
   border-radius: 50%;
-  box-shadow: 0 0 15px var(--cyan);
+  box-shadow: 0 0 16px #00f6ff, 0 0 32px rgba(0, 246, 255, 0.55);
   position: absolute;
+  pointer-events: none;
+  transform: translate(0px, 0px);
 }
 
-.look-zone {
-  top: 0;
-  right: 0;
-  width: 50%;
-  height: 70%;
-}
-
-.mobile-actions-cluster {
+.joystick-arrows {
   position: absolute;
-  bottom: 24px;
-  right: 24px;
-  display: grid;
-  grid-template-columns: repeat(3, 56px);
-  gap: 12px;
-  pointer-events: auto;
+  inset: 0;
+  pointer-events: none;
 }
 
-.mbtn {
+.j-arr {
+  position: absolute;
+  color: rgba(0, 246, 255, 0.4);
+  font-size: 11px;
+}
+.j-up { top: 6px; left: 50%; transform: translateX(-50%); }
+.j-down { bottom: 6px; left: 50%; transform: translateX(-50%); }
+.j-left { left: 6px; top: 50%; transform: translateY(-50%); }
+.j-right { right: 6px; top: 50%; transform: translateY(-50%); }
+
+/* Left-Hand Claw Fire Button (PUBG Feature) */
+.mbtn-claw-fire {
+  position: absolute;
+  top: 90px;
+  left: 24px;
   width: 56px;
   height: 56px;
-  background: rgba(15, 23, 42, 0.75);
-  border: 1px solid var(--border-neon);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 0, 85, 0.45) 0%, rgba(15, 23, 42, 0.85) 100%);
+  border: 2px solid rgba(255, 0, 85, 0.7);
+  color: #fff;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 16px rgba(255, 0, 85, 0.45);
+  z-index: 110;
+}
+
+.mbtn-claw-fire:active {
+  transform: scale(0.92);
+  background: #ff0055;
+  box-shadow: 0 0 25px rgba(255, 0, 85, 0.9);
+}
+
+/* Right-Hand Action Cluster */
+.mobile-actions-cluster {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.touch-action-btn {
+  background: rgba(11, 20, 38, 0.75);
+  border: 1.5px solid var(--border-neon);
   border-radius: 50%;
   color: #fff;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-  touch-action: none;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(0, 246, 255, 0.1);
+  backdrop-filter: blur(6px);
+  transition: transform 0.08s ease, background 0.15s ease;
 }
 
-.mbtn:active {
+.touch-action-btn:active {
   transform: scale(0.92);
   background: var(--cyan);
-  color: #000;
+  color: #030712;
 }
 
-.mbtn-glyph { font-size: 18px; }
-.mbtn-lbl { font-family: var(--font-display); font-size: 9px; font-weight: 800; }
+.touch-action-btn .mbtn-glyph {
+  font-size: 19px;
+  line-height: 1;
+}
 
-.mbtn-fire {
-  grid-column: 2;
-  grid-row: 1;
+.touch-action-btn .mbtn-lbl {
+  font-family: var(--font-display);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+/* 1. Large Primary Fire Button (68px) */
+.mbtn-primary-fire {
+  position: absolute;
+  bottom: 28px;
+  right: 25px;
   width: 68px;
   height: 68px;
-  background: linear-gradient(135deg, #ff0055, #be123c);
-  border-color: #fda4af;
-  box-shadow: 0 0 20px var(--crimson-glow);
+  background: radial-gradient(circle, #ff0055 25%, #be123c 100%);
+  border: 2.5px solid #fda4af;
+  box-shadow: 0 0 24px var(--crimson-glow), inset 0 0 12px rgba(255, 255, 255, 0.35);
+  z-index: 110;
 }
 
+.mbtn-primary-fire:active {
+  background: #ff0055;
+  box-shadow: 0 0 35px #ff0055;
+}
+
+/* 2. ADS (Scope) Button */
+.mbtn-ads {
+  position: absolute;
+  bottom: 40px;
+  right: 108px;
+  width: 56px;
+  height: 56px;
+  background: rgba(11, 20, 38, 0.85);
+  border-color: var(--cyan);
+  box-shadow: 0 0 15px rgba(0, 246, 255, 0.25);
+  z-index: 110;
+}
+
+.mbtn-ads.active-ads {
+  background: var(--cyan);
+  color: #000;
+  box-shadow: 0 0 25px var(--cyan);
+}
+
+/* 3. Jump Button */
+.mbtn-jump {
+  position: absolute;
+  bottom: 116px;
+  right: 28px;
+  width: 56px;
+  height: 56px;
+  border-color: rgba(255, 255, 255, 0.35);
+  z-index: 110;
+}
+
+/* 4. Dash / Sprint Button */
+.mbtn-dash {
+  position: absolute;
+  bottom: 116px;
+  right: 100px;
+  width: 54px;
+  height: 54px;
+  border-color: var(--amber);
+  color: var(--amber);
+  box-shadow: 0 0 15px rgba(245, 158, 11, 0.25);
+  z-index: 110;
+}
+
+/* 5. Reload Button */
+.mbtn-reload {
+  position: absolute;
+  bottom: 188px;
+  right: 32px;
+  width: 48px;
+  height: 48px;
+  border-color: rgba(0, 246, 255, 0.4);
+  font-size: 16px;
+  z-index: 110;
+}
+
+/* 6. Quick Heal Button */
 .mbtn-heal {
-  background: linear-gradient(135deg, #059669, #10b981);
+  position: absolute;
+  bottom: 188px;
+  right: 94px;
+  width: 48px;
+  height: 48px;
+  background: radial-gradient(circle, #059669 20%, #064e3b 100%);
   border-color: #6ee7b7;
-  box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.35);
+  z-index: 110;
 }
 
+/* 7. Loot Pickup Button */
+.mbtn-pickup {
+  position: absolute;
+  bottom: 250px;
+  right: 36px;
+  width: 50px;
+  height: 50px;
+  background: radial-gradient(circle, #f59e0b 20%, #78350f 100%);
+  border: 2px solid #fde68a;
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+  z-index: 110;
+}
+
+/* 8. Weapon Strip (Bottom Center) */
 .m-weapon-tray {
   position: absolute;
-  bottom: 12px;
+  bottom: 14px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 10px;
-  background: rgba(3, 7, 18, 0.8);
-  border: 1px solid var(--border-dim);
+  gap: 6px;
+  background: rgba(3, 7, 18, 0.85);
+  backdrop-filter: blur(10px);
+  border: 1.5px solid rgba(0, 246, 255, 0.3);
   border-radius: 12px;
-  padding: 4px;
+  padding: 4px 6px;
   pointer-events: auto;
+  z-index: 110;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
 }
 
 .m-weapon-tab {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
+  gap: 5px;
+  padding: 6px 10px;
   border-radius: 8px;
   color: var(--text-muted);
   font-family: var(--font-display);
   font-size: 11px;
   font-weight: 800;
   cursor: pointer;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  touch-action: none;
 }
 
 .m-weapon-tab.active {
   background: var(--cyan);
-  color: #000;
-  box-shadow: 0 0 10px var(--cyan-glow);
+  color: #030712;
+  box-shadow: 0 0 12px var(--cyan-glow);
+  border-color: #ffffff;
+}
+
+/* 9. Mobile Top-Right Pause Button */
+.mbtn-pause-hud {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(11, 20, 38, 0.85);
+  border: 1.5px solid var(--border-neon);
+  color: #fff;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 110;
+}
+
+/* Orientation Hint Overlay */
+.orientation-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 18, 0.96);
+  backdrop-filter: blur(16px);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+}
+
+.orientation-box {
+  max-width: 360px;
+  padding: 30px;
+  border-radius: 16px;
+  border: 1.5px solid var(--cyan);
+  box-shadow: 0 0 35px rgba(0, 246, 255, 0.35);
+  background: rgba(11, 20, 38, 0.9);
+}
+
+.rotate-phone-anim {
+  font-size: 48px;
+  animation: phoneRotateAnim 2s infinite ease-in-out;
+  margin-bottom: 16px;
+}
+
+@keyframes phoneRotateAnim {
+  0% { transform: rotate(0deg); }
+  40% { transform: rotate(-90deg); }
+  70% { transform: rotate(-90deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.orientation-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--cyan);
+  letter-spacing: 1.5px;
+  margin-bottom: 8px;
+}
+
+.orientation-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+/* Mobile Responsive Adjustments for Lobby and Modals */
+@media (max-width: 900px) {
+  .giant-start-btn {
+    width: calc(100% - 32px);
+    max-width: 480px;
+    bottom: 16px;
+    padding: 14px 20px;
+  }
+  .modal-dialog {
+    max-width: 95vw !important;
+    max-height: 88vh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 /* ==========================================================================

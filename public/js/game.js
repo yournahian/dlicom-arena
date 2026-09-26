@@ -1000,8 +1000,14 @@ class CyberWarfareClient {
     this.mouseButtons = { left: false, right: false };
     this.isPointerLocked = false;
     this.mouseSensitivity = 0.0022;
-    this.touchJoystick = { x: 0, y: 0, active: false, touchId: null, startX: 0, startY: 0 };
-    this.touchLook = { active: false, touchId: null, lastX: 0, lastY: 0 };
+    this.isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.matchMedia('(pointer: coarse)').matches;
+    this.touchJoystick = { x: 0, y: 0, active: false, isSprint: false };
+    this.activeTouches = {
+      joystick: null, // { id, startX, startY, currentX, currentY }
+      look: null,     // { id, lastX, lastY }
+      fire: null,     // { id, lastX, lastY }
+      fireLeft: null  // { id }
+    };
 
     // 5 Distinct Weapon Specifications
     this.weapons = {
@@ -1651,11 +1657,54 @@ class CyberWarfareClient {
     // Viewmodel weapon camera setup
     this.buildFirstPersonWeapon();
 
-    window.addEventListener('resize', () => {
+    window.addEventListener('resize', () => this.handleWindowResize());
+    window.addEventListener('orientationchange', () => {
+      setTimeout(() => this.handleWindowResize(), 150);
+    });
+  }
+
+  handleWindowResize() {
+    if (this.camera && this.renderer) {
       this.camera.aspect = window.innerWidth / window.innerHeight;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(window.innerWidth, window.innerHeight);
-    });
+    }
+    if (this.inMatch && (this.isTouch || window.innerWidth <= 1024)) {
+      document.getElementById('mobile-touch-hud')?.classList.remove('hidden');
+    }
+    this.checkOrientationNotice();
+  }
+
+  checkOrientationNotice() {
+    const overlay = document.getElementById('orientation-overlay');
+    if (!overlay) return;
+    const isPortrait = window.innerHeight > window.innerWidth;
+    if (this.inMatch && isPortrait) {
+      overlay.classList.remove('hidden');
+    } else {
+      overlay.classList.add('hidden');
+    }
+  }
+
+  resetTouchState() {
+    this.activeTouches = {
+      joystick: null,
+      look: null,
+      fire: null,
+      fireLeft: null
+    };
+    this.touchJoystick = { x: 0, y: 0, active: false, isSprint: false };
+    const jBase = document.getElementById('joystick-base');
+    const jThumb = document.getElementById('joystick-thumb');
+    if (jBase) {
+      jBase.style.left = '';
+      jBase.style.top = '';
+      jBase.style.bottom = '';
+      jBase.style.opacity = '0.35';
+    }
+    if (jThumb) {
+      jThumb.style.transform = 'translate(0px, 0px)';
+    }
   }
 
   // -------------------------------------------------------------
@@ -4580,13 +4629,10 @@ class CyberWarfareClient {
       try { this.canvas.requestPointerLock?.(); } catch (err) {}
     }
 
-    if (this.isTouch || window.innerWidth <= 800) {
+    if (this.isTouch || window.innerWidth <= 1024) {
       document.getElementById('mobile-touch-hud')?.classList.remove('hidden');
     }
-
-    try {
-      this.canvas.requestPointerLock?.();
-    } catch (err) { }
+    this.checkOrientationNotice();
 
     this.keys = {};
     this.mouseButtons = { left: false, right: false };
@@ -4603,6 +4649,7 @@ class CyberWarfareClient {
     this.isPaused = true;
     this.keys = {};
     this.mouseButtons = { left: false, right: false };
+    this.resetTouchState();
     document.getElementById('in-game-pause-modal')?.classList.remove('hidden');
     document.getElementById('hud-pointer-lock-prompt')?.classList.add('hidden');
     if (document.exitPointerLock) document.exitPointerLock();
@@ -4624,8 +4671,10 @@ class CyberWarfareClient {
     this.isPointerLocked = false;
     this.keys = {};
     this.mouseButtons = { left: false, right: false };
+    this.resetTouchState();
     this.player.isShooting = false;
     this.player.isADS = false;
+    document.getElementById('mbtn-ads')?.classList.remove('active-ads');
     this.player.isReloading = false;
     this.player.isHealing = false;
     if (this.reloadTimeout) clearTimeout(this.reloadTimeout);
@@ -4662,6 +4711,7 @@ class CyberWarfareClient {
     document.getElementById('hud-reload-spinner')?.classList.add('hidden');
     document.getElementById('hud-reload-bar-wrap')?.classList.add('hidden');
     document.getElementById('mobile-touch-hud')?.classList.add('hidden');
+    document.getElementById('orientation-overlay')?.classList.add('hidden');
     document.getElementById('respawn-modal')?.classList.add('hidden');
     document.getElementById('br-countdown-banner')?.classList.add('hidden');
     const stormVignette = document.getElementById('storm-vignette');
@@ -4984,210 +5034,299 @@ class CyberWarfareClient {
   }
 
   initMobileTouchControls() {
-    const joystickZone = document.getElementById('touch-joystick-zone');
-    const joystickThumb = document.getElementById('joystick-thumb');
-    const lookZone = document.getElementById('touch-look-zone');
+    const jBase = document.getElementById('joystick-base');
+    const jThumb = document.getElementById('joystick-thumb');
+    const mAds = document.getElementById('mbtn-ads');
 
-    // Left Touch Joystick
-    joystickZone?.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      sounds.init();
-      const touch = e.changedTouches[0];
-      this.touchJoystick.active = true;
-      this.touchJoystick.touchId = touch.identifier;
-      this.touchJoystick.startX = touch.clientX;
-      this.touchJoystick.startY = touch.clientY;
-    }, { passive: false });
+    // Global touchstart handler
+    const handleTouchStart = (e) => {
+      // Auto-detect mobile touch environment on first touch
+      this.isTouch = true;
 
-    joystickZone?.addEventListener('touchmove', (e) => {
-      e.preventDefault();
+      // If not in match or game is paused, let standard UI events pass through
+      if (!this.inMatch || this.isPaused) return;
+
       for (let i = 0; i < e.changedTouches.length; i++) {
         const touch = e.changedTouches[i];
-        if (touch.identifier === this.touchJoystick.touchId) {
-          const dx = touch.clientX - this.touchJoystick.startX;
-          const dy = touch.clientY - this.touchJoystick.startY;
-          const maxDist = 45;
-          const dist = Math.sqrt(dx * dx + dy * dy);
+        const target = document.elementFromPoint(touch.clientX, touch.clientY) || touch.target;
+
+        // Skip touches on modal overlays, staging screen, or pause dialog
+        if (target && (target.closest('.modal-overlay') || target.closest('#in-game-pause-modal') || target.closest('#match-end-modal') || target.closest('#staging-screen') || target.closest('#respawn-modal'))) {
+          continue;
+        }
+
+        // 1. Tactical Pause Button (Top-Right)
+        if (target && target.closest('#mbtn-pause')) {
+          e.preventDefault();
+          this.openPauseMenu();
+          continue;
+        }
+
+        // 2. Left-Hand Claw Fire Button (Top-Left)
+        if (target && target.closest('#mbtn-fire-left')) {
+          e.preventDefault();
+          sounds.init();
+          this.activeTouches.fireLeft = { id: touch.identifier };
+          this.mouseButtons.left = true;
+          this.fireWeapon();
+          continue;
+        }
+
+        // 3. Right-Hand Primary Fire Button (Bottom-Right, allows simultaneous drag-to-aim)
+        if (target && target.closest('#mbtn-fire')) {
+          e.preventDefault();
+          sounds.init();
+          this.activeTouches.fire = {
+            id: touch.identifier,
+            lastX: touch.clientX,
+            lastY: touch.clientY
+          };
+          this.mouseButtons.left = true;
+          this.fireWeapon();
+          continue;
+        }
+
+        // 4. ADS / Scope Toggle Button
+        if (target && target.closest('#mbtn-ads')) {
+          e.preventDefault();
+          this.player.isADS = !this.player.isADS;
+          mAds?.classList.toggle('active-ads', this.player.isADS);
+          continue;
+        }
+
+        // 5. Jump Impulse Button
+        if (target && target.closest('#mbtn-jump')) {
+          e.preventDefault();
+          sounds.init();
+          if (this.player.isGrounded) {
+            this.player.vy = 8.5; // Kirby/Kirka vertical jump impulse
+            this.player.isGrounded = false;
+            sounds.playJumpBoost();
+          }
+          continue;
+        }
+
+        // 6. Tactical Dash Boost Button
+        if (target && target.closest('#mbtn-dash')) {
+          e.preventDefault();
+          this.performDash();
+          continue;
+        }
+
+        // 7. Reload Weapon Button
+        if (target && target.closest('#mbtn-reload')) {
+          e.preventDefault();
+          this.reloadWeapon();
+          continue;
+        }
+
+        // 8. Quick Heal / Medkit Button
+        if (target && target.closest('#mbtn-medic')) {
+          e.preventDefault();
+          if (this.player.health < 60 && (this.player.medic?.medkit || 0) > 0) {
+            this.useMedicItem('medkit');
+          } else if (this.player.health < 75 && (this.player.medic?.bandage || 0) > 0) {
+            this.useMedicItem('bandage');
+          } else if (this.player.health < 100 && (this.player.medic?.medkit || 0) > 0) {
+            this.useMedicItem('medkit');
+          } else if (this.player.armor < 100 && (this.player.medic?.shield_battery || 0) > 0) {
+            this.useMedicItem('shield_battery');
+          } else {
+            this.useMedicItem('medkit');
+          }
+          continue;
+        }
+
+        // 9. Loot Pickup Button
+        if (target && target.closest('#mbtn-pickup')) {
+          e.preventDefault();
+          this.attemptLootPickup();
+          continue;
+        }
+
+        // 10. Horizontal Weapon Quick-Switch Tray
+        const weaponTab = target ? target.closest('.m-weapon-tab') : null;
+        if (weaponTab) {
+          e.preventDefault();
+          const wKey = weaponTab.dataset.weapon;
+          if (wKey) this.switchWeapon(wKey);
+          continue;
+        }
+
+        // Prevent unwanted actions if touching other touch action buttons
+        if (target && target.closest('.touch-action-btn')) {
+          e.preventDefault();
+          continue;
+        }
+
+        // ---------------- DUAL-ZONE TOUCH SCREEN SPLIT ----------------
+        e.preventDefault();
+        sounds.init();
+
+        const splitThreshold = window.innerWidth * 0.45;
+
+        // ZONE A: LEFT 45% (DYNAMIC VIRTUAL JOYSTICK - MOVEMENT)
+        if (touch.clientX <= splitThreshold) {
+          if (!this.activeTouches.joystick) {
+            this.activeTouches.joystick = {
+              id: touch.identifier,
+              startX: touch.clientX,
+              startY: touch.clientY,
+              currentX: touch.clientX,
+              currentY: touch.clientY
+            };
+            this.touchJoystick.active = true;
+            this.touchJoystick.x = 0;
+            this.touchJoystick.y = 0;
+            this.touchJoystick.isSprint = false;
+
+            // Anchor joystick base directly centered under the user's thumb
+            if (jBase) {
+              jBase.style.left = `${touch.clientX}px`;
+              jBase.style.top = `${touch.clientY}px`;
+              jBase.style.bottom = 'auto';
+              jBase.style.opacity = '0.9';
+            }
+            if (jThumb) {
+              jThumb.style.transform = 'translate(0px, 0px)';
+            }
+          }
+        } else {
+          // ZONE B: RIGHT 55% (CAMERA LOOK & AIM DRAG)
+          if (!this.activeTouches.look) {
+            this.activeTouches.look = {
+              id: touch.identifier,
+              lastX: touch.clientX,
+              lastY: touch.clientY
+            };
+          }
+        }
+      }
+    };
+
+    // Global touchmove handler
+    const handleTouchMove = (e) => {
+      if (!this.inMatch || this.isPaused) return;
+      e.preventDefault();
+
+      const maxRadius = 45;
+      const baseSens = (this.mouseSensitivity || 0.0035) * 1.5;
+      const sensitivity = baseSens * (this.player.isADS ? 0.45 : 1.0);
+      const maxPitch = (75 * Math.PI) / 180; // PUBG Standard +/- 75 degrees clamp
+
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+
+        // 1. Dynamic Joystick Drag (Zone A)
+        if (this.activeTouches.joystick && touch.identifier === this.activeTouches.joystick.id) {
+          const dx = touch.clientX - this.activeTouches.joystick.startX;
+          const dy = touch.clientY - this.activeTouches.joystick.startY;
+          const dist = Math.hypot(dx, dy);
           const angle = Math.atan2(dy, dx);
-          const clampedDist = Math.min(maxDist, dist);
+          const clampedDist = Math.min(maxRadius, dist);
 
           const tx = Math.cos(angle) * clampedDist;
           const ty = Math.sin(angle) * clampedDist;
 
-          this.touchJoystick.x = tx / maxDist;
-          this.touchJoystick.y = ty / maxDist;
+          this.touchJoystick.x = tx / maxRadius;
+          this.touchJoystick.y = ty / maxRadius;
+          // Pushing all the way forward triggers sprint (PUBG standard)
+          this.touchJoystick.isSprint = (dy < -0.85 * maxRadius);
 
-          if (joystickThumb) {
-            joystickThumb.style.transform = `translate(${tx}px, ${ty}px)`;
+          if (jThumb) {
+            jThumb.style.transform = `translate(${tx}px, ${ty}px)`;
+          }
+        }
+
+        // 2. Relative Delta Look & Aim Drag (Zone B)
+        if (this.activeTouches.look && touch.identifier === this.activeTouches.look.id) {
+          const deltaX = touch.clientX - this.activeTouches.look.lastX;
+          const deltaY = touch.clientY - this.activeTouches.look.lastY;
+
+          this.activeTouches.look.lastX = touch.clientX;
+          this.activeTouches.look.lastY = touch.clientY;
+
+          this.player.yaw -= deltaX * sensitivity;
+          this.player.pitch -= deltaY * sensitivity;
+          this.player.pitch = Math.max(-maxPitch, Math.min(maxPitch, this.player.pitch));
+        }
+
+        // 3. Right Fire Button Drag-to-Aim while firing (PUBG Mobile Standard)
+        if (this.activeTouches.fire && touch.identifier === this.activeTouches.fire.id) {
+          const deltaX = touch.clientX - this.activeTouches.fire.lastX;
+          const deltaY = touch.clientY - this.activeTouches.fire.lastY;
+
+          this.activeTouches.fire.lastX = touch.clientX;
+          this.activeTouches.fire.lastY = touch.clientY;
+
+          this.player.yaw -= deltaX * sensitivity;
+          this.player.pitch -= deltaY * sensitivity;
+          this.player.pitch = Math.max(-maxPitch, Math.min(maxPitch, this.player.pitch));
+        }
+      }
+    };
+
+    // Global touchend & touchcancel handler
+    const handleTouchEnd = (e) => {
+      if (!this.inMatch) return;
+
+      for (let i = 0; i < e.changedTouches.length; i++) {
+        const touch = e.changedTouches[i];
+
+        // 1. Release Dynamic Joystick
+        if (this.activeTouches.joystick && touch.identifier === this.activeTouches.joystick.id) {
+          this.activeTouches.joystick = null;
+          this.touchJoystick.active = false;
+          this.touchJoystick.x = 0;
+          this.touchJoystick.y = 0;
+          this.touchJoystick.isSprint = false;
+
+          // Return joystick base to resting state
+          if (jBase) {
+            jBase.style.left = '';
+            jBase.style.top = '';
+            jBase.style.bottom = '';
+            jBase.style.opacity = '0.35';
+          }
+          if (jThumb) {
+            jThumb.style.transform = 'translate(0px, 0px)';
+          }
+        }
+
+        // 2. Release Look Touch
+        if (this.activeTouches.look && touch.identifier === this.activeTouches.look.id) {
+          this.activeTouches.look = null;
+        }
+
+        // 3. Release Right Fire Button
+        if (this.activeTouches.fire && touch.identifier === this.activeTouches.fire.id) {
+          this.activeTouches.fire = null;
+          if (!this.activeTouches.fireLeft) {
+            this.mouseButtons.left = false;
+            this.pistolCanShoot = true;
+          }
+        }
+
+        // 4. Release Left Claw Fire Button
+        if (this.activeTouches.fireLeft && touch.identifier === this.activeTouches.fireLeft.id) {
+          this.activeTouches.fireLeft = null;
+          if (!this.activeTouches.fire) {
+            this.mouseButtons.left = false;
+            this.pistolCanShoot = true;
           }
         }
       }
-    }, { passive: false });
-
-    const endJoystick = (e) => {
-      for (let i = 0; i < e.changedTouches.length; i++) {
-        if (e.changedTouches[i].identifier === this.touchJoystick.touchId) {
-          this.touchJoystick.active = false;
-          this.touchJoystick.touchId = null;
-          this.touchJoystick.x = 0;
-          this.touchJoystick.y = 0;
-          if (joystickThumb) joystickThumb.style.transform = 'translate(0px, 0px)';
-        }
-      }
     };
-    joystickZone?.addEventListener('touchend', endJoystick);
-    joystickZone?.addEventListener('touchcancel', endJoystick);
 
-    // Right Touch Look
-    lookZone?.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      sounds.init();
-      const touch = e.changedTouches[0];
-      this.touchLook.active = true;
-      this.touchLook.touchId = touch.identifier;
-      this.touchLook.lastX = touch.clientX;
-      this.touchLook.lastY = touch.clientY;
-    }, { passive: false });
+    // Register strict native touch listeners with passive: false to prevent browser gesture interruptions
+    window.addEventListener('touchstart', handleTouchStart, { passive: false });
+    window.addEventListener('touchmove', handleTouchMove, { passive: false });
+    window.addEventListener('touchend', handleTouchEnd, { passive: false });
+    window.addEventListener('touchcancel', handleTouchEnd, { passive: false });
 
-    lookZone?.addEventListener('touchmove', (e) => {
-      e.preventDefault();
-      for (let i = 0; i < e.changedTouches.length; i++) {
-        const touch = e.changedTouches[i];
-        if (touch.identifier === this.touchLook.touchId) {
-          const dx = touch.clientX - this.touchLook.lastX;
-          const dy = touch.clientY - this.touchLook.lastY;
-          this.touchLook.lastX = touch.clientX;
-          this.touchLook.lastY = touch.clientY;
-
-          const sens = 0.005 * (this.player.isADS ? 0.5 : 1.0);
-          this.player.yaw -= dx * sens;
-          this.player.pitch -= dy * sens;
-          this.player.pitch = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, this.player.pitch));
-        }
-      }
-    }, { passive: false });
-
-    const endLook = (e) => {
-      for (let i = 0; i < e.changedTouches.length; i++) {
-        if (e.changedTouches[i].identifier === this.touchLook.touchId) {
-          this.touchLook.active = false;
-          this.touchLook.touchId = null;
-        }
-      }
-    };
-    lookZone?.addEventListener('touchend', endLook);
-    lookZone?.addEventListener('touchcancel', endLook);
-
-    // Mobile Action Buttons
-    const mFire = document.getElementById('mbtn-fire');
-    if (mFire) {
-      const onFireStart = (e) => {
-        e.preventDefault();
-        sounds.init();
-        this.mouseButtons.left = true;
-        this.fireWeapon();
-      };
-      const onFireEnd = (e) => {
-        e.preventDefault();
-        this.mouseButtons.left = false;
-        this.pistolCanShoot = true;
-      };
-      mFire.addEventListener('touchstart', onFireStart, { passive: false });
-      mFire.addEventListener('touchend', onFireEnd);
-      mFire.addEventListener('pointerdown', onFireStart);
-      mFire.addEventListener('pointerup', onFireEnd);
-    }
-
-    const mJump = document.getElementById('mbtn-jump');
-    if (mJump) {
-      const onJump = (e) => {
-        e.preventDefault();
-        sounds.init();
-        if (this.player.isGrounded) {
-          this.player.vy = 8.5; // Instant Kirka-style vertical impulse: +8.5 m/s
-          this.player.isGrounded = false;
-          sounds.playJumpBoost();
-        }
-      };
-      mJump.addEventListener('touchstart', onJump, { passive: false });
-      mJump.addEventListener('click', onJump);
-    }
-
-    const mDash = document.getElementById('mbtn-dash');
-    if (mDash) {
-      const onDash = (e) => {
-        e.preventDefault();
-        this.performDash();
-      };
-      mDash.addEventListener('touchstart', onDash, { passive: false });
-      mDash.addEventListener('click', onDash);
-    }
-
-    const mAds = document.getElementById('mbtn-ads');
-    if (mAds) {
-      const onAds = (e) => {
-        e.preventDefault();
-        this.player.isADS = !this.player.isADS;
-      };
-      mAds.addEventListener('touchstart', onAds, { passive: false });
-      mAds.addEventListener('click', onAds);
-    }
-
-    const mReload = document.getElementById('mbtn-reload');
-    if (mReload) {
-      const onReload = (e) => {
-        e.preventDefault();
-        this.reloadWeapon();
-      };
-      mReload.addEventListener('touchstart', onReload, { passive: false });
-      mReload.addEventListener('click', onReload);
-    }
-
-    const mMedic = document.getElementById('mbtn-medic');
-    if (mMedic) {
-      const onMedic = (e) => {
-        e.preventDefault();
-        if (this.player.health < 60 && (this.player.medic?.medkit || 0) > 0) {
-          this.useMedicItem('medkit');
-        } else if (this.player.health < 75 && (this.player.medic?.bandage || 0) > 0) {
-          this.useMedicItem('bandage');
-        } else if (this.player.health < 100 && (this.player.medic?.medkit || 0) > 0) {
-          this.useMedicItem('medkit');
-        } else if (this.player.armor < 100 && (this.player.medic?.shield_battery || 0) > 0) {
-          this.useMedicItem('shield_battery');
-        } else {
-          this.useMedicItem('medkit');
-        }
-      };
-      mMedic.addEventListener('touchstart', onMedic, { passive: false });
-      mMedic.addEventListener('click', onMedic);
-    }
-
-    // Mobile Loot Pickup Button & Desktop Prompt Click
-    const mPickup = document.getElementById('mbtn-pickup');
-    if (mPickup) {
-      const onPickup = (e) => {
-        e.preventDefault();
-        this.attemptLootPickup();
-      };
-      mPickup.addEventListener('touchstart', onPickup, { passive: false });
-      mPickup.addEventListener('click', onPickup);
-    }
-
+    // Desktop click fallback for loot proximity prompt
     document.getElementById('loot-proximity-prompt')?.addEventListener('click', () => {
       this.attemptLootPickup();
-    });
-
-    // Mobile Weapon Tray Tabs
-    document.querySelectorAll('.m-weapon-tab').forEach((tab) => {
-      const switchTab = (e) => {
-        e.preventDefault();
-        document.querySelectorAll('.m-weapon-tab').forEach((t) => t.classList.remove('active'));
-        tab.classList.add('active');
-        this.switchWeapon(tab.dataset.weapon);
-      };
-      tab.addEventListener('touchstart', switchTab, { passive: false });
-      tab.addEventListener('click', switchTab);
     });
   }
 
@@ -7010,7 +7149,7 @@ class CyberWarfareClient {
   updatePlayerPhysics(dt) {
     if (!this.inMatch) return;
     if (this.isPaused && !this.isDroppingBR) return;
-    const isSprint = this.keys['ShiftLeft'] || this.keys['ShiftRight'] || (this.touchJoystick.active && this.touchJoystick.y < -0.7);
+    const isSprint = this.keys['ShiftLeft'] || this.keys['ShiftRight'] || this.touchJoystick.isSprint || (this.touchJoystick.active && this.touchJoystick.y < -0.85);
     const hasOverdrive = Date.now() < this.player.speedBoostUntil;
 
     // Standard walk speed 6.0 m/s, sprint 9.5 m/s

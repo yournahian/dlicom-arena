@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Dlicom Arena: Cyber Voxel FPS</title>
   <meta name="description" content="Fast-paced, real-time multiplayer 3D Voxel First-Person Shooter with cross-platform desktop and mobile controls.">
   <meta property="og:title" content="Dlicom Arena: Cyber Voxel FPS">
@@ -1254,57 +1254,70 @@
         <span id="toast-msg" class="pt-msg">+40 HEALTH RESTORED</span>
       </div>
 
-      <!-- ================= 10. MOBILE TOUCH HUD ================= -->
+      <!-- ================= 10. MOBILE TOUCH HUD (PUBG & FREE FIRE STANDARD) ================= -->
       <div id="mobile-touch-hud" class="mobile-hud hidden">
-        <!-- Floating Left Virtual Joystick Zone -->
-        <div id="touch-joystick-zone" class="touch-zone joystick-zone">
-          <div id="joystick-base" class="joystick-base">
-            <div id="joystick-thumb" class="joystick-thumb"></div>
+        <!-- Floating Left Dynamic Virtual Joystick Base & Thumb -->
+        <div id="joystick-base" class="joystick-base">
+          <div id="joystick-thumb" class="joystick-thumb"></div>
+          <div class="joystick-arrows">
+            <span class="j-arr j-up">▲</span>
+            <span class="j-arr j-down">▼</span>
+            <span class="j-arr j-left">◀</span>
+            <span class="j-arr j-right">▶</span>
           </div>
         </div>
 
-        <!-- Right Look & Aim Drag Zone -->
-        <div id="touch-look-zone" class="touch-zone look-zone"></div>
+        <!-- Upper-Left Claw Fire Button (PUBG Style) -->
+        <button type="button" id="mbtn-fire-left" class="touch-action-btn mbtn-claw-fire" title="Left Fire Button">
+          <span class="mbtn-glyph">🔥</span>
+        </button>
 
-        <!-- Action Buttons -->
+        <!-- Right Hand Ergonomic Combat Action Cluster -->
         <div class="mobile-actions-cluster">
-          <button type="button" id="mbtn-fire" class="mbtn mbtn-fire" title="Fire">
+          <!-- Primary Large Fire Button (68px) -->
+          <button type="button" id="mbtn-fire" class="touch-action-btn mbtn-primary-fire" title="Fire / Drag Aim">
             <span class="mbtn-glyph">🔥</span>
             <span class="mbtn-lbl">FIRE</span>
           </button>
 
-          <button type="button" id="mbtn-jump" class="mbtn mbtn-jump" title="Jump">
-            <span class="mbtn-glyph">▲</span>
-            <span class="mbtn-lbl">JUMP</span>
-          </button>
-
-          <button type="button" id="mbtn-dash" class="mbtn mbtn-dash" title="Dash Boost">
-            <span class="mbtn-glyph">⚡</span>
-            <span class="mbtn-lbl">DASH</span>
-          </button>
-
-          <button type="button" id="mbtn-ads" class="mbtn mbtn-ads" title="Aim Down Sights">
+          <!-- ADS / Scope Button -->
+          <button type="button" id="mbtn-ads" class="touch-action-btn mbtn-ads" title="Aim Down Sights">
             <span class="mbtn-glyph">🎯</span>
             <span class="mbtn-lbl">ADS</span>
           </button>
 
-          <button type="button" id="mbtn-reload" class="mbtn mbtn-reload" title="Reload Weapon">
+          <!-- Jump Button -->
+          <button type="button" id="mbtn-jump" class="touch-action-btn mbtn-jump" title="Jump Impulse">
+            <span class="mbtn-glyph">▲</span>
+            <span class="mbtn-lbl">JUMP</span>
+          </button>
+
+          <!-- Dash / Sprint Boost Button -->
+          <button type="button" id="mbtn-dash" class="touch-action-btn mbtn-dash" title="Tactical Dash">
+            <span class="mbtn-glyph">⚡</span>
+            <span class="mbtn-lbl">DASH</span>
+          </button>
+
+          <!-- Reload Button -->
+          <button type="button" id="mbtn-reload" class="touch-action-btn mbtn-reload" title="Reload Ammo">
             <span class="mbtn-glyph">🔄</span>
             <span class="mbtn-lbl">RELOAD</span>
           </button>
 
-          <button type="button" id="mbtn-medic" class="mbtn mbtn-heal" title="Heal / Quick Medic">
+          <!-- Quick Heal / Nanite Injector Button -->
+          <button type="button" id="mbtn-medic" class="touch-action-btn mbtn-heal" title="Quick Heal">
             <span class="mbtn-glyph">🧰</span>
             <span class="mbtn-lbl">HEAL</span>
           </button>
 
-          <button type="button" id="mbtn-pickup" class="mbtn mbtn-pickup hidden" title="Pick Up Loot">
+          <!-- Loot Proximity Button -->
+          <button type="button" id="mbtn-pickup" class="touch-action-btn mbtn-pickup hidden" title="Pick Up Ground Loot">
             <span class="mbtn-glyph">🖐️</span>
             <span class="mbtn-lbl">LOOT</span>
           </button>
         </div>
 
-        <!-- Bottom Weapon Switch Tray -->
+        <!-- Bottom Center 5-Slot Weapon Quick-Switch Tray -->
         <div id="m-weapon-tray" class="m-weapon-tray">
           <div class="m-weapon-tab active" data-weapon="ar">
             <span class="mwt-icon">⚡</span>
@@ -1318,11 +1331,29 @@
             <span class="mwt-icon">🎯</span>
             <span class="mwt-name">SNIPER</span>
           </div>
+          <div class="m-weapon-tab" data-weapon="smg">
+            <span class="mwt-icon">⚡</span>
+            <span class="mwt-name">SMG</span>
+          </div>
+          <div class="m-weapon-tab" data-weapon="pistol">
+            <span class="mwt-icon">🔫</span>
+            <span class="mwt-name">PISTOL</span>
+          </div>
         </div>
+
         <!-- Mobile Top-Right Header with Pause / Settings Button -->
-        <button type="button" id="mbtn-pause" class="mbtn-pause-hud" title="Tactical Pause / Settings">
+        <button type="button" id="mbtn-pause" class="touch-action-btn mbtn-pause-hud" title="Tactical Pause">
           <span>⚙️</span>
         </button>
+      </div>
+
+      <!-- Rotate to Landscape Orientation Notice -->
+      <div id="orientation-overlay" class="orientation-overlay hidden">
+        <div class="orientation-box cyber-glass-card">
+          <div class="rotate-phone-anim">📱 ↷</div>
+          <h3 class="orientation-title">PLEASE ROTATE TO LANDSCAPE</h3>
+          <p class="orientation-sub">Landscape orientation is required for tactical combat & dual-zone touch controls.</p>
+        </div>
       </div>
 
     </div>
