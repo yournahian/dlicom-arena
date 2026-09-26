@@ -1,0 +1,6 @@
+{
+  "name": "Dlicom Arena: Cyber Voxel FPS",
+  "description": "Fast-paced, real-time multiplayer 3D Voxel First-Person Shooter with cross-platform desktop and mobile controls.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

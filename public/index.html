@@ -1,0 +1,1847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Dlicom Arena: Cyber Voxel FPS</title>
+  <meta name="description" content="Fast-paced, real-time multiplayer 3D Voxel First-Person Shooter with cross-platform desktop and mobile controls.">
+  <meta property="og:title" content="Dlicom Arena: Cyber Voxel FPS">
+  <meta property="og:description" content="Fast-paced, real-time multiplayer 3D Voxel First-Person Shooter with cross-platform desktop and mobile controls.">
+  
+  <!-- Cyberpunk Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800;900&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/style.css?v=8">
+  
+  <!-- Three.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Socket.io -->
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <!-- 3D WebGL Canvas Layer -->
+  <canvas id="game-canvas"></canvas>
+
+  <!-- ================= 0. RETRO CYBER BOOT LOADING SCREEN ================= -->
+  <div id="loadingScreen" class="loading-screen-overlay">
+    <div class="crt-scanlines"></div>
+    <div class="crt-vignette"></div>
+    <div class="boot-container">
+      <!-- Glowing SVG Astronaut Helmet Silhouette -->
+      <div class="boot-icon-wrap">
+        <svg class="boot-helmet-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="50" cy="50" r="46" stroke="#00f6ff" stroke-width="2" stroke-dasharray="6 4" class="boot-ring-spin" />
+          <path d="M26 44C26 30 36 20 50 20C64 20 74 30 74 44V58C74 66 66 74 56 74H44C34 74 26 66 26 58V44Z" fill="#0b172a" stroke="#00f6ff" stroke-width="3" />
+          <path d="M34 42C34 34 40 28 50 28C60 28 66 34 66 42V48C66 54 60 58 50 58C40 58 34 54 34 48V42Z" fill="url(#visorGrad)" stroke="#38bdf8" stroke-width="2" />
+          <path d="M38 40C40 34 45 32 50 32" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity="0.8" />
+          <!-- Antenna / Comm array -->
+          <line x1="50" y1="20" x2="50" y2="12" stroke="#00f6ff" stroke-width="3" stroke-linecap="round" />
+          <circle cx="50" cy="10" r="3" fill="#10b981" />
+          <defs>
+            <linearGradient id="visorGrad" x1="34" y1="28" x2="66" y2="58" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#00f6ff" stop-opacity="0.85" />
+              <stop offset="1" stop-color="#3b82f6" stop-opacity="0.95" />
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+
+      <div class="boot-header-block">
+        <div class="boot-badge">SYSTEM INITIALIZATION</div>
+        <h1 class="boot-title">DLICOM ARENA // BOOT PROTOCOL v3.0</h1>
+        <div class="boot-sub">CYBER VOXEL WARFARE MATRIX · AUTHORITATIVE 30Hz CLUSTER</div>
+      </div>
+
+      <!-- Cyber Terminal Log & Progress Bar -->
+      <div class="boot-progress-cluster">
+        <div class="boot-status-row">
+          <span id="boot-status-text" class="boot-status-text">INITIALIZING VOXEL ENGINE...</span>
+          <span id="boot-percent-text" class="boot-percent-text">0%</span>
+        </div>
+        <div class="boot-track">
+          <div id="boot-progress-bar" class="boot-fill" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <!-- Action Button (Shown when loading hits 100%) -->
+      <button type="button" id="btn-enter-arena" class="btn-enter-boot hidden">
+        <span class="btn-enter-glow"></span>
+        <span class="btn-enter-icon">⚡</span>
+        <span class="btn-enter-label">TAP / CLICK TO INITIALIZE AUDIO & ENTER</span>
+        <span class="btn-enter-icon">▶</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Screen Vignettes for Atmospheric FX -->
+  <div id="damage-vignette" class="vignette"></div>
+  <div id="critical-hp-vignette" class="vignette"></div>
+  <div id="heal-vignette" class="vignette"></div>
+  <div id="storm-vignette" class="vignette"></div>
+
+  <!-- Directional Damage Indicator Container -->
+  <div id="directional-damage-indicator" class="directional-indicator-overlay hidden">
+    <div id="damage-arrow" class="damage-arrow"></div>
+  </div>
+
+  <!-- UI & HUD ROOT LAYER -->
+  <div id="ui-layer">
+
+    <!-- ================= 1. AAA BATTLE LOBBY HUB (PUBG / FREE FIRE STYLE) ================= -->
+    <div id="lobbyScreen" class="lobby-screen-mount">
+    <div id="lobby-hub" class="lobby-screen">
+      
+      <!-- Center Stage 3D Viewport Interaction Overlay -->
+      <div id="lobby-mascot-viewport" class="lobby-mascot-viewport" title="Drag to rotate mascot">
+        <div class="mascot-rotate-hint">
+          <span class="rotate-icon">↻</span>
+          <span class="rotate-text">DRAG TO ROTATE</span>
+        </div>
+      </div>
+
+      <!-- Atmospheric Cyber Dust & Lighting Grid -->
+      <div class="lobby-stage-glow"></div>
+      <div class="lobby-grid-floor-fx"></div>
+
+      <!-- Fixed Lobby HUD Frame (3-Zone Clean Layout) -->
+      <div class="lobby-hud-frame">
+        
+        <!-- ---------------- TOP BAR ---------------- -->
+        <header class="lobby-header-bar">
+          
+          <!-- TOP-LEFT: Player Profile Card -->
+          <div class="player-profile-card">
+            <div class="avatar-ring-wrapper">
+              <div class="avatar-glow-ring"></div>
+              <canvas id="mascot-avatar-canvas" width="68" height="68"></canvas>
+              <div class="avatar-level-badge">Lv. 12</div>
+            </div>
+
+            <div class="profile-meta-info">
+              <div class="profile-name-row">
+                <input type="text" id="player-nickname" class="nickname-input" placeholder="Call-sign..." maxlength="16" autocomplete="off" spellcheck="false" value="CyberPilot" title="Click to rename">
+                <button type="button" id="btn-random-name" class="btn-dice-random" title="Randomize Callsign">
+                  <span class="dice-glyph">🎲</span>
+                </button>
+              </div>
+
+              <div class="profile-rank-row">
+                <span class="rank-badge">🏆 CYBER MASTER</span>
+                <span class="profile-stat-pill">K/D 2.8 · 68% WIN</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- TOP-RIGHT: Utility Bar -->
+          <div class="lobby-utility-bar">
+            <!-- Ping indicator -->
+            <div class="util-item ping-widget" title="Network Latency">
+              <span class="ping-dot"></span>
+              <span id="lobby-ping-val" class="ping-text">24ms</span>
+            </div>
+
+            <!-- Sound toggle button -->
+            <button type="button" id="btn-lobby-audio" class="util-btn" title="Toggle Sound">
+              <span class="btn-icon">🔊</span>
+              <span class="btn-lbl">SOUND ON</span>
+            </button>
+
+            <!-- Settings button -->
+            <button type="button" id="btn-lobby-settings" class="util-btn" title="Settings">
+              <span class="btn-icon">⚙️</span>
+              <span class="btn-lbl">SETTINGS</span>
+            </button>
+
+            <!-- Fullscreen button -->
+            <button type="button" id="btn-lobby-fullscreen" class="util-btn" title="Toggle Fullscreen">
+              <span class="btn-icon">⛶</span>
+              <span class="btn-lbl">FULLSCREEN</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- ---------------- RIGHT SIDE: VERTICAL QUICK-ACTION TRAY ---------------- -->
+        <aside class="lobby-right-tray">
+          <button type="button" id="btn-nav-rooms" class="tray-action-btn" title="Custom Private & Public Rooms">
+            <div class="btn-neon-accent"></div>
+            <span class="tray-icon">🏠</span>
+            <div class="tray-text-wrap">
+              <span class="tray-title">Custom Rooms</span>
+              <span class="tray-sub">Create & Join</span>
+            </div>
+          </button>
+
+          <button type="button" id="btn-nav-weapons" class="tray-action-btn" title="Armory Loadout">
+            <div class="btn-neon-accent"></div>
+            <span class="tray-icon">🔫</span>
+            <div class="tray-text-wrap">
+              <span class="tray-title">Weapons</span>
+              <span class="tray-sub">Equip Loadout</span>
+            </div>
+          </button>
+
+          <button type="button" id="btn-nav-controls" class="tray-action-btn" title="Keybinds & Touch Layout">
+            <div class="btn-neon-accent"></div>
+            <span class="tray-icon">⌨️</span>
+            <div class="tray-text-wrap">
+              <span class="tray-title">Controls</span>
+              <span class="tray-sub">PC & Mobile Guide</span>
+            </div>
+          </button>
+        </aside>
+
+        <!-- ---------------- BOTTOM-LEFT: PRIMARY ACTION ANCHOR ---------------- -->
+        <div class="lobby-bottom-anchor">
+          
+          <!-- Mode Selector Card (Click to open Select Mode Modal) -->
+          <div id="lobby-mode-selector" class="mode-selector-card" title="Click to Change Combat Mode">
+            <div class="mode-card-header">
+              <span id="lobby-selected-mode-badge" class="mode-type-badge tdm">4v4 TDM</span>
+              <span class="mode-switch-prompt">SELECT MODE ▾</span>
+            </div>
+            
+            <div class="mode-card-body">
+              <div id="lobby-selected-mode-title" class="mode-display-title">TEAM DEATHMATCH</div>
+              <div id="lobby-selected-mode-sub" class="mode-display-sub">Blue vs Red • 40 Kills • Fast Respawns</div>
+            </div>
+          </div>
+
+          <!-- Map Selector Card (Click to open Select Map Modal) -->
+          <div id="lobby-map-selector" class="map-selector-card" title="Click to Change Arena Map">
+            <div class="map-card-header">
+              <span class="map-badge-label">🗺️ ARENA MAP</span>
+              <span class="map-switch-prompt">SELECT MAP ▾</span>
+            </div>
+            <div class="map-card-body">
+              <div id="lobby-selected-map-title" class="map-display-title">CYBER WAREHOUSE</div>
+              <div id="lobby-selected-map-sub" class="map-display-sub">Kirka Factory • Symmetrical 4v4 TDM</div>
+            </div>
+          </div>
+
+          <!-- Giant START GAME Button (PUBG / Free Fire High-Contrast Neon CTA) -->
+          <button type="button" id="btn-giant-start" class="btn-giant-start">
+            <div class="start-glow-pulse"></div>
+            <div class="start-btn-content">
+              <div class="start-title-row">
+                <span class="start-arrow">▶</span>
+                <span id="start-btn-label" class="start-label">START GAME</span>
+              </div>
+              <span id="start-btn-sub" class="start-subtext">QUICK MATCHMAKING</span>
+            </div>
+          </button>
+
+          <!-- Hidden Quick Play Buttons to wire cleanly with game.js event listeners -->
+          <div class="hidden-game-triggers" style="display:none;">
+            <button type="button" id="btn-quick-tdm"></button>
+            <button type="button" id="btn-quick-br"></button>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+    </div>
+
+    <!-- ================= 2. MODAL: SELECT GAME MODE ================= -->
+    <div id="modal-mode-select" class="modal-overlay hidden">
+      <div class="modal-dialog mode-dialog cyber-glass-card">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <span class="modal-glyph">🎮</span>
+            <div>
+              <h2 class="modal-title">Select Mode</h2>
+              <p class="modal-subtitle">Pick your battle arena for the next match</p>
+            </div>
+          </div>
+          <button type="button" id="btn-close-mode-modal" class="modal-close-btn">&times;</button>
+        </div>
+
+        <div class="modal-body mode-cards-grid">
+          <!-- TDM Card -->
+          <div id="mode-opt-tdm" class="mode-big-card active" data-mode="tdm">
+            <div class="mbc-accent blue"></div>
+            <div class="mbc-top">
+              <span class="mbc-badge tdm">4v4 SQUAD</span>
+              <span class="mbc-status">ACTIVE ARENA</span>
+            </div>
+            <div class="mbc-center">
+              <span class="mbc-icon">⚡</span>
+              <h3 class="mbc-name">Team Deathmatch</h3>
+              <p class="mbc-desc">Cyan Team vs Crimson Team. First squad to score 40 eliminations or hold lead at 5:00 claims the victory.</p>
+            </div>
+            <div class="mbc-specs">
+              <span>⏱ 5 Min Match</span>
+              <span>🔄 3s Respawn</span>
+              <span>🛡 Base Shields</span>
+            </div>
+            <button type="button" class="btn-choose-mode" data-mode="tdm">SELECT 4v4 TDM</button>
+          </div>
+
+          <!-- BR Card -->
+          <div id="mode-opt-br" class="mode-big-card" data-mode="br">
+            <div class="mbc-accent amber"></div>
+            <div class="mbc-top">
+              <span class="mbc-badge br">10-FFA</span>
+              <span class="mbc-status">BATTLE ROYALE</span>
+            </div>
+            <div class="mbc-center">
+              <span class="mbc-icon">🪂</span>
+              <h3 class="mbc-name">Battle Royale</h3>
+              <p class="mbc-desc">10 combatants drop in. Loot supply crates, outrun the deadly shrinking Glitch Storm safe zone, and become the last survivor.</p>
+            </div>
+            <div class="mbc-specs">
+              <span>☠ Permadeath</span>
+              <span>📦 Loot Crates</span>
+              <span>⚡ Glitch Storm</span>
+            </div>
+            <button type="button" class="btn-choose-mode" data-mode="br">SELECT BATTLE ROYALE</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= 2B. MODAL: SELECT VOXEL MAP ================= -->
+    <div id="modal-map-select" class="modal-overlay hidden">
+      <div class="modal-dialog map-dialog cyber-glass-card">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <span class="modal-glyph">🗺️</span>
+            <div>
+              <h2 class="modal-title">Select Arena Map</h2>
+              <p class="modal-subtitle">Handcrafted Kirka-style voxel battlegrounds</p>
+            </div>
+          </div>
+          <button type="button" id="btn-close-map-modal" class="modal-close-btn">&times;</button>
+        </div>
+
+        <div class="modal-body map-cards-grid">
+          <!-- Map 1: Cyber Warehouse -->
+          <div id="map-opt-warehouse" class="map-big-card active" data-map="warehouse">
+            <div class="map-accent cyan"></div>
+            <div class="map-card-top">
+              <span class="map-tag factory">FACTORY VIBE</span>
+              <span class="map-status">ACTIVE ARENA</span>
+            </div>
+            <div class="map-preview-thumb thumb-warehouse">
+              <div class="map-thumb-overlay">
+                <span class="mto-icon">🏭</span>
+                <span class="mto-badge">SYMMETRICAL TDM</span>
+              </div>
+            </div>
+            <div class="map-center-info">
+              <h3 class="map-title">Cyber Warehouse</h3>
+              <p class="map-desc">Industrial steel containers, elevated catwalks, hazard-striped ramps, and central stacked crates. High-action symmetrical layout.</p>
+            </div>
+            <div class="map-specs-row">
+              <span>🎯 AR & Shotgun</span>
+              <span>👥 4v4 TDM</span>
+              <span>🟣 Jump Pads</span>
+            </div>
+            <button type="button" class="btn-choose-map" data-map="warehouse">DEPLOY WAREHOUSE</button>
+          </div>
+
+          <!-- Map 2: Dlicom Node: Data Vault -->
+          <div id="map-opt-vault" class="map-big-card" data-map="vault">
+            <div class="map-accent purple"></div>
+            <div class="map-card-top">
+              <span class="map-tag vault">BLOCKCHAIN CORE</span>
+              <span class="map-status">SELECTABLE</span>
+            </div>
+            <div class="map-preview-thumb thumb-vault">
+              <div class="map-thumb-overlay">
+                <span class="mto-icon">⛓️</span>
+                <span class="mto-badge">ENCRYPTED CORE</span>
+              </div>
+            </div>
+            <div class="map-center-info">
+              <h3 class="map-title">Data Vault</h3>
+              <p class="map-desc">Obsidian circuit floors, towering server racks with green LEDs, and a central Core Processor cylinder with low-gravity boost pads.</p>
+            </div>
+            <div class="map-specs-row">
+              <span>💥 Shotgun & SMG</span>
+              <span>⚡ Close Quarters</span>
+              <span>🧬 Low-G Core</span>
+            </div>
+            <button type="button" class="btn-choose-map" data-map="vault">DEPLOY DATA VAULT</button>
+          </div>
+
+          <!-- Map 3: Neon Rooftops -->
+          <div id="map-opt-rooftops" class="map-big-card" data-map="rooftops">
+            <div class="map-accent pink"></div>
+            <div class="map-card-top">
+              <span class="map-tag rooftops">SYNTHWAVE CITY</span>
+              <span class="map-status">SELECTABLE</span>
+            </div>
+            <div class="map-preview-thumb thumb-rooftops">
+              <div class="map-thumb-overlay">
+                <span class="mto-icon">🏙️</span>
+                <span class="mto-badge">VERTICAL ROOFTOPS</span>
+              </div>
+            </div>
+            <div class="map-center-info">
+              <h3 class="map-title">Neon Rooftops</h3>
+              <p class="map-desc">Multi-level skyscraper rooftops under glowing neon night sky. Connected skybridges, ventilation shafts, and high crane perches.</p>
+            </div>
+            <div class="map-specs-row">
+              <span>🎯 Sniper & DMR</span>
+              <span>🪂 Verticality & BR</span>
+              <span>🛡️ Void Barriers</span>
+            </div>
+            <button type="button" class="btn-choose-map" data-map="rooftops">DEPLOY ROOFTOPS</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= 3. MODAL: WEAPONS ARMORY ("SELECT YOUR GUN") ================= -->
+    <div id="modal-weapons" class="modal-overlay hidden">
+      <div class="modal-dialog armory-dialog cyber-glass-card">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <span class="modal-glyph">🔫</span>
+            <div>
+              <h2 class="modal-title">Select Your Gun</h2>
+              <p class="modal-subtitle">Choose your primary combat weapon for deployment</p>
+            </div>
+          </div>
+          <button type="button" id="btn-close-weapons-modal" class="modal-close-btn">&times;</button>
+        </div>
+
+        <div class="modal-body armory-body">
+          <!-- 3 Weapon Cards Row -->
+          <div class="weapons-deck-grid">
+            
+            <!-- AR Card -->
+            <div class="weapon-card active" data-weapon="ar">
+              <div class="w-accent-glow"></div>
+              <div class="w-card-header">
+                <span class="w-slot-tag">[ SLOT 1 ]</span>
+                <span class="w-class-pill text-cyan">RAPID AUTO</span>
+              </div>
+              <div class="w-visual-box">
+                <span class="w-glyph">⚡</span>
+                <div class="w-title">Pulse Blaster</div>
+                <div class="w-sub">30-Round Plasma AR</div>
+              </div>
+              <button type="button" class="btn-equip-weapon">EQUIPPED</button>
+            </div>
+
+            <!-- Shotgun Card -->
+            <div class="weapon-card" data-weapon="shotgun">
+              <div class="w-accent-glow"></div>
+              <div class="w-card-header">
+                <span class="w-slot-tag">[ SLOT 2 ]</span>
+                <span class="w-class-pill text-amber">SPREAD CQB</span>
+              </div>
+              <div class="w-visual-box">
+                <span class="w-glyph">💥</span>
+                <div class="w-title">Voxel Shotgun</div>
+                <div class="w-sub">8-Pellet Kinetic Spread</div>
+              </div>
+              <button type="button" class="btn-equip-weapon">EQUIP</button>
+            </div>
+
+            <!-- Sniper Card -->
+            <div class="weapon-card" data-weapon="sniper">
+              <div class="w-accent-glow"></div>
+              <div class="w-card-header">
+                <span class="w-slot-tag">[ SLOT 3 ]</span>
+                <span class="w-class-pill text-purple">PRECISION</span>
+              </div>
+              <div class="w-visual-box">
+                <span class="w-glyph">🎯</span>
+                <div class="w-title">Cyber Sniper</div>
+                <div class="w-sub">Lethal Headshot Scope</div>
+              </div>
+              <button type="button" class="btn-equip-weapon">EQUIP</button>
+            </div>
+
+          </div>
+
+          <!-- Dynamic Weapon Telemetry / Stat Bars -->
+          <div class="weapon-telemetry-panel">
+            <h4 class="telemetry-heading">WEAPON PERFORMANCE SPECS</h4>
+            
+            <div class="telemetry-meters-grid">
+              <div class="stat-line">
+                <div class="stat-head">
+                  <span>DAMAGE</span>
+                  <span id="stat-dmg-val" class="stat-val">24 DMG</span>
+                </div>
+                <div class="stat-meter"><div id="stat-dmg-bar" class="stat-fill" style="width: 55%"></div></div>
+              </div>
+
+              <div class="stat-line">
+                <div class="stat-head">
+                  <span>FIRE RATE</span>
+                  <span id="stat-rof-val" class="stat-val">600 RPM</span>
+                </div>
+                <div class="stat-meter"><div id="stat-rof-bar" class="stat-fill" style="width: 85%"></div></div>
+              </div>
+
+              <div class="stat-line">
+                <div class="stat-head">
+                  <span>ACCURACY & RANGE</span>
+                  <span id="stat-acc-val" class="stat-val">HIGH ACCURACY</span>
+                </div>
+                <div class="stat-meter"><div id="stat-acc-bar" class="stat-fill" style="width: 75%"></div></div>
+              </div>
+
+              <div class="stat-line">
+                <div class="stat-head">
+                  <span>MAGAZINE CAPACITY</span>
+                  <span id="stat-mag-val" class="stat-val">30 / 120</span>
+                </div>
+                <div class="stat-meter"><div id="stat-mag-bar" class="stat-fill" style="width: 70%"></div></div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= 4. MODAL: CONTROLS GUIDE ================= -->
+    <div id="modal-controls" class="modal-overlay hidden">
+      <div class="modal-dialog controls-dialog cyber-glass-card">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <span class="modal-glyph">⌨️</span>
+            <div>
+              <h2 class="modal-title">Controls Guide</h2>
+              <p class="modal-subtitle">Master PC keyboard shortcuts and mobile touch controls</p>
+            </div>
+          </div>
+          
+          <div class="controls-tab-bar">
+            <button type="button" class="tab-btn active" data-tab="desktop">PC (KEYBOARD & MOUSE)</button>
+            <button type="button" class="tab-btn" data-tab="mobile">MOBILE (TOUCH)</button>
+          </div>
+
+          <button type="button" id="btn-close-controls-modal" class="modal-close-btn">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <!-- Desktop Keyboard Controls Pane -->
+          <div id="controls-pane-desktop" class="controls-pane active">
+            <div class="keybind-grid">
+              <div class="keybind-item">
+                <div class="keycaps"><span class="k-cap">W</span><span class="k-cap">A</span><span class="k-cap">S</span><span class="k-cap">D</span></div>
+                <span class="k-label">Move & Strafe</span>
+              </div>
+              <div class="keybind-item">
+                <div class="keycaps"><span class="k-cap mouse">MOUSE</span></div>
+                <span class="k-label">Look & Aim</span>
+              </div>
+              <div class="keybind-item">
+                <div class="keycaps"><span class="k-cap">L-CLICK</span></div>
+                <span class="k-label">Fire Weapon</span>
+              </div>
+              <div class="keybind-item">
+                <div class="keycaps"><span class="k-cap">R-CLICK</span></div>
+                <span class="k-label">Aim Down Sights</span>
+              </div>
+              <div class="keybind-item">
+                <div class="keycaps"><span class="k-cap wide">SPACE</span></div>
+                <span class="k-label">Jump / Boost</span>
+              </div>
+              <div class="keybind-item">
+                <div class="keycaps"><span class="k-cap">Q</span><span class="k-cap">E</span></div>
+                <span class="k-label">Dash Boost</span>
+              </div>
+              <div class="keybind-item">
+                <div class="keycaps"><span class="k-cap">1</span><span class="k-cap">2</span><span class="k-cap">3</span></div>
+                <span class="k-label">Swap Weapons</span>
+              </div>
+              <div class="keybind-item">
+                <div class="keycaps"><span class="k-cap">R</span></div>
+                <span class="k-label">Reload Mag</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Mobile Touch Controls Pane -->
+          <div id="controls-pane-mobile" class="controls-pane">
+            <div class="mobile-guide-layout">
+              <div class="mg-column">
+                <div class="mg-card">
+                  <span class="mg-icon">🕹️</span>
+                  <div class="mg-info">
+                    <strong>LEFT THUMB</strong>
+                    <p>Floating 360° virtual analog stick for omnidirectional movement and strafing.</p>
+                  </div>
+                </div>
+                <div class="mg-card">
+                  <span class="mg-icon">👆</span>
+                  <div class="mg-info">
+                    <strong>RIGHT THUMB</strong>
+                    <p>Drag on the right half of the screen to aim your camera and reticle.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="mg-column">
+                <div class="mg-card">
+                  <span class="mg-icon">💥</span>
+                  <div class="mg-info">
+                    <strong>COMBAT HUD BUTTONS</strong>
+                    <p>Tap FIRE, JUMP, DASH, ADS (Scope), and RELOAD action buttons.</p>
+                  </div>
+                </div>
+                <div class="mg-card">
+                  <span class="mg-icon">🔫</span>
+                  <div class="mg-info">
+                    <strong>WEAPON TRAY</strong>
+                    <p>Tap AR, Shotgun, or Sniper tabs at screen bottom to instantly switch guns.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= 5. MODAL: CUSTOM ROOMS BROWSER ================= -->
+    <div id="modal-rooms" class="modal-overlay hidden">
+      <div class="modal-dialog rooms-browser-dialog cyber-glass-card">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <span class="modal-glyph">🏠</span>
+            <div>
+              <h2 class="modal-title">Custom Rooms</h2>
+              <p class="modal-subtitle">Create private lobbies or join community matches by room code</p>
+            </div>
+          </div>
+          <button type="button" id="btn-close-rooms-modal" class="modal-close-btn">&times;</button>
+        </div>
+
+        <div class="modal-body rooms-body">
+          
+          <!-- Top Room Action Bar -->
+          <div class="rooms-action-bar">
+            <!-- Create Room Button (High-Contrast Green) -->
+            <button type="button" id="btn-open-create-room" class="btn-create-room-green">
+              <span class="act-icon">➕</span>
+              <span class="act-text">Create Room</span>
+            </button>
+
+            <!-- Join by Code Input & Button -->
+            <div class="join-by-code-group">
+              <input type="text" id="join-room-code-input" class="room-code-input" placeholder="ROOM CODE..." maxlength="6" autocomplete="off" spellcheck="false">
+              <button type="button" id="btn-join-by-code" class="btn-join-code-enter">
+                ENTER
+              </button>
+            </div>
+
+            <!-- Refresh Button -->
+            <button type="button" id="btn-refresh-rooms" class="btn-refresh-rooms" title="Refresh Room List">
+              <span class="refresh-icon">🔄</span> Refresh
+            </button>
+          </div>
+
+          <!-- Public Room List Header & Container -->
+          <div class="room-list-wrapper">
+            <div class="room-list-header-row">
+              <span>ROOM NAME & MODE</span>
+              <span>PLAYERS / ACTION</span>
+            </div>
+
+            <div class="room-list-container">
+              <div id="room-list-empty" class="room-list-placeholder">
+                <div class="placeholder-icon">📡</div>
+                <div class="placeholder-title">NO ACTIVE ROOMS FOUND</div>
+                <div class="placeholder-sub">Click "Create Room" above or start instant Quick Play from the lobby.</div>
+              </div>
+
+              <div id="room-list-items" class="room-list-grid">
+                <!-- Dynamically populated via JS -->
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= 6. MODAL: SETTINGS ================= -->
+    <div id="modal-settings" class="modal-overlay hidden">
+      <div class="modal-dialog settings-dialog cyber-glass-card">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <span class="modal-glyph">⚙️</span>
+            <div>
+              <h2 class="modal-title">Settings</h2>
+              <p class="modal-subtitle">Audio, Display, and Mouse Controls</p>
+            </div>
+          </div>
+          <button type="button" id="btn-close-settings-modal" class="modal-close-btn">&times;</button>
+        </div>
+
+        <div class="modal-body settings-body">
+          <div class="settings-group">
+            <label class="settings-label">MASTER AUDIO</label>
+            <div class="settings-control-row">
+              <span>Sound Effects & Synthesis</span>
+              <button type="button" id="btn-settings-audio-toggle" class="btn-settings-toggle">AUDIO: ON</button>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <label class="settings-label">MOUSE LOOK SENSITIVITY</label>
+            <div class="settings-slider-row">
+              <input type="range" id="settings-sensitivity-slider" min="1" max="10" value="5" class="cyber-slider">
+              <span id="settings-sensitivity-val" class="slider-val">5.0</span>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <label class="settings-label">FULLSCREEN MODE</label>
+            <div class="settings-control-row">
+              <span>Expand to Full Display</span>
+              <button type="button" id="btn-settings-fs-toggle" class="btn-settings-toggle">EXPAND</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="btn-done-settings" class="btn-modal-confirm">DONE</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= 7. MODAL: CONFIGURE CUSTOM ARENA ROOM ================= -->
+    <div id="modal-create-room" class="modal-overlay hidden">
+      <div class="modal-dialog cyber-glass-card">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <span class="modal-glyph">⚙️</span>
+            <span class="modal-title">Configure Custom Arena</span>
+          </div>
+          <button type="button" id="btn-close-create-modal" class="modal-close-btn">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <!-- Game Mode Selector -->
+          <div class="form-group">
+            <label class="form-label">SELECT COMBAT MODE</label>
+            <div class="mode-selector-tabs">
+              <div class="mode-tab-btn active" data-mode="tdm">
+                <span class="mt-icon">⚡</span>
+                <div class="mt-text">
+                  <div class="mt-title">4v4 TEAM DEATHMATCH</div>
+                  <div class="mt-sub">Blue vs Red • 40 Kills Target</div>
+                </div>
+              </div>
+              <div class="mode-tab-btn" data-mode="br">
+                <span class="mt-icon">🪂</span>
+                <div class="mt-text">
+                  <div class="mt-title">BATTLE ROYALE</div>
+                  <div class="mt-sub">10 Players • Glitch Storm • Permadeath</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Room Name -->
+          <div class="form-group">
+            <label class="form-label" for="room-name-input">ROOM NAME</label>
+            <input type="text" id="room-name-input" class="pro-input" placeholder="e.g. Cyber Championship #1" maxlength="24" value="Cyber Arena">
+          </div>
+
+          <!-- Arena Map Selection -->
+          <div class="form-group">
+            <label class="form-label" for="room-map-select">ARENA MAP</label>
+            <select id="room-map-select" class="pro-input">
+              <option value="warehouse" selected>Cyber Warehouse (Factory Vibe • Symmetrical 4v4 TDM)</option>
+              <option value="vault">Dlicom Node: Data Vault (Blockchain Core)</option>
+              <option value="rooftops">Neon Rooftops (Synthwave City • Verticality)</option>
+            </select>
+          </div>
+
+          <!-- Password (Optional) -->
+          <div class="form-group">
+            <label class="form-label" for="room-pass-input">ROOM PASSWORD (OPTIONAL)</label>
+            <input type="password" id="room-pass-input" class="pro-input" placeholder="Leave blank for public room..." maxlength="16">
+          </div>
+
+          <!-- Fill Empty Slots with Bots Switch -->
+          <div class="form-group toggle-group">
+            <div class="toggle-info">
+              <span class="toggle-title">SMART BOT BACKFILL</span>
+              <span class="toggle-sub">Automatically populate remaining slots with combat bots (real players seamlessly replace bots).</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="room-fill-bots" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="btn-cancel-create" class="btn-modal-cancel">CANCEL</button>
+          <button type="button" id="btn-confirm-create" class="btn-modal-confirm">
+            <span>CREATE ROOM & ENTER STAGING</span> ▶
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= 8. STAGING ROOM SCREEN ================= -->
+    <div id="staging-screen" class="lobby-screen staging-screen-bg hidden">
+      <div class="staging-container interactive">
+        
+        <!-- Staging Top Header -->
+        <header class="staging-topbar">
+          <div class="st-left">
+            <div class="st-room-id-box">
+              <span class="st-label">ROOM CODE:</span>
+              <span id="staging-room-code" class="st-code">CYB7</span>
+              <button type="button" id="btn-copy-room-link" class="btn-copy-code" title="Copy shareable link">
+                📋 COPY LINK
+              </button>
+            </div>
+            <div id="staging-mode-pill" class="staging-mode-pill">4v4 TEAM DEATHMATCH</div>
+          </div>
+
+          <div class="st-center">
+            <h2 id="staging-room-name" class="staging-room-title">CYBER ARENA</h2>
+          </div>
+
+          <div class="st-right">
+            <button type="button" id="btn-leave-staging" class="btn-leave-room">
+              ← LEAVE ROOM
+            </button>
+          </div>
+        </header>
+
+        <!-- Staging Slot Layout -->
+        <main class="staging-main">
+          
+          <!-- TDM Team Grid (Active when mode is TDM) -->
+          <div id="staging-tdm-layout" class="staging-mode-layout">
+            <!-- Team Blue Column -->
+            <div class="team-slot-column team-blue">
+              <div class="team-col-header">
+                <div class="team-col-title">
+                  <span class="team-dot blue"></span>
+                  <span>TEAM BLUE (CYAN)</span>
+                </div>
+                <button type="button" id="btn-switch-blue" class="btn-switch-team blue">JOIN TEAM</button>
+              </div>
+              <div id="slots-blue" class="slot-list">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+
+            <!-- VS Divider -->
+            <div class="team-vs-divider">
+              <div class="vs-crest">VS</div>
+              <div class="vs-sub">TARGET: 40 KILLS</div>
+            </div>
+
+            <!-- Team Red Column -->
+            <div class="team-slot-column team-red">
+              <div class="team-col-header">
+                <div class="team-col-title">
+                  <span class="team-dot red"></span>
+                  <span>TEAM RED (CRIMSON)</span>
+                </div>
+                <button type="button" id="btn-switch-red" class="btn-switch-team red">JOIN TEAM</button>
+              </div>
+              <div id="slots-red" class="slot-list">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Battle Royale Roster (Active when mode is BR) -->
+          <div id="staging-br-layout" class="staging-mode-layout hidden">
+            <div class="br-roster-header">
+              <div class="br-roster-title">
+                <span>👑 BATTLE ROYALE ROSTER (10 COMBATANTS)</span>
+              </div>
+              <div class="br-roster-sub">Contracting Glitch Storm • Supply Crates • Last Survivor Wins</div>
+            </div>
+            <div id="slots-br" class="br-slot-grid">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+        </main>
+
+        <!-- Staging Action Bar -->
+        <footer class="staging-footer">
+          <div class="sf-left">
+            <div class="bot-fill-indicator">
+              <span class="bf-icon">🤖</span>
+              <span id="staging-bot-status" class="bf-text">Smart Bot Backfill: ACTIVE</span>
+            </div>
+          </div>
+
+          <div class="sf-center">
+            <div id="staging-status-msg" class="staging-status-msg">WAITING FOR HOST TO LAUNCH...</div>
+          </div>
+
+          <div class="sf-right">
+            <button type="button" id="btn-launch-match" class="btn-launch-game host-only">
+              <span class="launch-icon">▶</span>
+              <span class="launch-text">LAUNCH MATCH NOW</span>
+            </button>
+          </div>
+        </footer>
+
+      </div>
+    </div>
+
+    <!-- ================= 9. IN-GAME HUD ================= -->
+    <div id="inGameHUD" class="in-game-hud-mount">
+    <div id="hud-overlay" class="hud-container hidden">
+      
+      <!-- Tactical Mini-Map Radar (Top Left) -->
+      <div id="hud-minimap-container" class="hud-minimap-container">
+        <div class="minimap-header">
+          <span class="minimap-title">RADAR // 80M</span>
+          <span id="minimap-coords" class="minimap-coords">X: 0 | Z: 0</span>
+        </div>
+        <div class="minimap-viewport">
+          <canvas id="hud-minimap-canvas" width="130" height="130"></canvas>
+          <div class="minimap-compass-n">N</div>
+        </div>
+      </div>
+
+      <!-- Top Match Bar: Mode Specific -->
+      <div class="hud-top-bar">
+        
+        <!-- TDM Scores -->
+        <div id="hud-tdm-bar" class="hud-score-widget tdm-bar">
+          <div class="score-team blue">
+            <span class="st-flag">BLUE</span>
+            <span id="hud-score-blue" class="st-num">0</span>
+          </div>
+
+          <div class="match-clock-box">
+            <div id="hud-match-timer" class="clock-display">05:00</div>
+            <div class="clock-label">FIRST TO 40 KILLS</div>
+          </div>
+
+          <div class="score-team red">
+            <span id="hud-score-red" class="st-num">0</span>
+            <span class="st-flag">RED</span>
+          </div>
+        </div>
+
+        <!-- Battle Royale Alive & Storm Bar -->
+        <div id="hud-br-bar" class="hud-score-widget br-bar hidden">
+          <div class="br-alive-box">
+            <span class="alive-icon">👤</span>
+            <span class="alive-lbl">ALIVE:</span>
+            <span id="hud-br-alive" class="alive-num">10 / 10</span>
+            <span class="br-stat-divider">|</span>
+            <span class="alive-lbl">KILLS:</span>
+            <span id="hud-br-kills" class="kills-num">0</span>
+          </div>
+
+          <div class="br-storm-box">
+            <span class="storm-icon">⚡</span>
+            <div class="storm-info">
+              <div id="hud-storm-status" class="storm-status">ZONE SHRINKS IN: 00:40</div>
+              <div id="hud-storm-radius" class="storm-radius">RADIUS: 100m • DPS: 4</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Directional Compass Bar (0° - 360° with Safe Zone Direction Indicator) -->
+      <div id="hud-compass-bar" class="hud-compass-bar hidden">
+        <div class="compass-tape-wrap">
+          <canvas id="compass-canvas" width="360" height="32"></canvas>
+          <div class="compass-reticle">▼</div>
+        </div>
+      </div>
+
+      <!-- Real-Time Kill Feed (Top Right) -->
+      <div id="kill-feed" class="kill-feed-tray"></div>
+
+      <!-- Speed Boost Overdrive Indicator -->
+      <div id="hud-speed-gauge" class="speed-boost-hud hidden">
+        <span class="boost-icon">⚡</span>
+        <span class="boost-txt">QUANTUM OVERDRIVE</span>
+        <span id="hud-speed-timer" class="boost-time">8.0s</span>
+      </div>
+
+      <!-- Reticle / Crosshair -->
+      <div id="crosshair" class="crosshair-wrapper">
+        <div class="ch-line ch-top"></div>
+        <div class="ch-line ch-bottom"></div>
+        <div class="ch-line ch-left"></div>
+        <div class="ch-line ch-right"></div>
+        <div class="ch-center-dot"></div>
+        <div id="hitmarker" class="hitmarker-x hidden"></div>
+      </div>
+
+      <!-- Pointer Lock Resume Prompt (Desktop) -->
+      <div id="hud-pointer-lock-prompt" class="hud-center-prompt hidden">
+        <div class="prompt-badge">CLICK ANYWHERE TO RESUME & AIM</div>
+      </div>
+
+      <!-- Floating Damage Numbers Container -->
+      <div id="floating-damage-layer"></div>
+
+      <!-- HUD Bottom Left: Vitals (Health & Armor) & Medic Quick Tray -->
+      <div class="hud-bottom-left">
+        <div class="vitals-cluster">
+          <!-- Health Meter -->
+          <div class="meter-row health-row">
+            <div class="meter-icon">✚</div>
+            <div class="meter-bar-frame">
+              <div id="hud-health-bar" class="meter-fill hp-fill" style="width: 100%"></div>
+            </div>
+            <span id="hud-health-val" class="meter-val">100</span>
+          </div>
+
+          <!-- Armor Shield Meter -->
+          <div class="meter-row armor-row">
+            <div class="meter-icon">🛡️</div>
+            <div class="meter-bar-frame">
+              <div id="hud-armor-bar" class="meter-fill ap-fill" style="width: 0%"></div>
+            </div>
+            <span id="hud-armor-val" class="meter-val">0</span>
+          </div>
+
+          <!-- Medic Quick Slots Tray -->
+          <div class="medic-slots-tray">
+            <button type="button" id="btn-medic-bandage" class="medic-slot-btn" title="Nanite Bandage [Key 4] (Restores 20 HP, 2s use, cap 75 HP)">
+              <span class="ms-key">4</span>
+              <span class="ms-icon">🩹</span>
+              <span class="ms-info">
+                <span class="ms-name">BANDAGE</span>
+                <span id="slot-count-bandage" class="ms-count">x2</span>
+              </span>
+            </button>
+
+            <button type="button" id="btn-medic-medkit" class="medic-slot-btn" title="Cyber Medkit [Key 5] (Fully restores 100% HP, 4s use)">
+              <span class="ms-key">5</span>
+              <span class="ms-icon">🧰</span>
+              <span class="ms-info">
+                <span class="ms-name">MEDKIT</span>
+                <span id="slot-count-medkit" class="ms-count">x1</span>
+              </span>
+            </button>
+
+            <button type="button" id="btn-medic-battery" class="medic-slot-btn" title="Shield Battery [Key 6] (Restores 50 Shield AP, 2.5s use)">
+              <span class="ms-key">6</span>
+              <span class="ms-icon">🔋</span>
+              <span class="ms-info">
+                <span class="ms-name">BATTERY</span>
+                <span id="slot-count-battery" class="ms-count">x1</span>
+              </span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cyber Sniper Scope Full-Screen Optic Overlay -->
+      <div id="cyber-sniper-scope" class="sniper-scope-overlay hidden">
+        <div class="scope-aperture">
+          <div class="scope-inner-lens">
+            <div class="scope-crosshair-h"></div>
+            <div class="scope-crosshair-v"></div>
+            <div class="scope-mil-marks"></div>
+            <div class="scope-center-point"></div>
+            <div class="scope-telemetry top-left">
+              <span class="scope-tele-lbl">CYBER OPTIC // 8X DIGITAL</span>
+              <span class="scope-tele-val">THERMAL SYNC</span>
+            </div>
+            <div class="scope-telemetry bottom-right">
+              <span class="scope-tele-lbl">RNG: 145M</span>
+              <span class="scope-tele-val">ELEV: 0.0°</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ground Loot Proximity Interaction Prompt (PUBG Style) -->
+      <div id="loot-proximity-prompt" class="loot-prompt-card hidden">
+        <div class="lp-key-badge">F</div>
+        <div class="lp-info">
+          <span class="lp-action">PICK UP</span>
+          <span id="lp-item-name" class="lp-title">CYBER MEDKIT</span>
+        </div>
+        <div id="lp-item-icon" class="lp-icon">🧰</div>
+      </div>
+
+      <!-- Large Center Countdown Banner: PREPARING AIRDROP: 10s -->
+      <div id="br-countdown-banner" class="br-countdown-banner hidden">
+        <span class="br-cd-icon">🪂</span>
+        <span id="br-countdown-text" class="br-cd-text">PREPARING AIRDROP: 10s</span>
+      </div>
+
+      <!-- Spawn Shield Active Banner -->
+      <div id="spawn-shield-banner" class="spawn-shield-alert hidden">
+        <span class="ss-icon">🛡️</span>
+        <span class="ss-text">SPAWN SHIELD ACTIVE: <span id="spawn-shield-timer-val">3</span>s</span>
+      </div>
+
+      <!-- Circular Healing HUD Progress Ring (PUBG Style) -->
+      <div id="hud-circular-healing" class="circular-healing-box hidden">
+        <div class="ch-ring-wrap">
+          <svg class="ch-svg" viewBox="0 0 100 100">
+            <circle class="ch-bg-ring" cx="50" cy="50" r="42"></circle>
+            <circle id="ch-progress-circle" class="ch-fg-ring" cx="50" cy="50" r="42"></circle>
+          </svg>
+          <div class="ch-center-content">
+            <span id="ch-icon" class="ch-icon">🧰</span>
+            <span id="ch-countdown" class="ch-countdown">4.0s</span>
+          </div>
+        </div>
+        <div class="ch-details">
+          <span id="ch-item-name" class="ch-item-label">USING MEDKIT...</span>
+          <span class="ch-lock-hint">ACTION LOCKED (50% SPEED • FIRE/JUMP TO CANCEL)</span>
+        </div>
+      </div>
+
+      <!-- Medic Channeling / Healing Use Progress Bar -->
+      <div id="hud-healing-channel" class="healing-channel-box hidden">
+        <div class="hc-header">
+          <span id="hc-item-icon" class="hc-icon">🧰</span>
+          <span id="hc-item-name" class="hc-title">APPLYING CYBER MEDKIT...</span>
+          <span id="hc-cancel-hint" class="hc-hint">(FIRE OR SWITCH TO CANCEL • 50% SPEED)</span>
+        </div>
+        <div class="hc-bar-frame">
+          <div id="hc-progress-bar" class="hc-fill"></div>
+        </div>
+      </div>
+
+      <!-- Horizontal Weapon Selection Strip (Desktop & Mobile Single-Tap) -->
+      <div id="hud-weapon-strip" class="hud-weapon-strip">
+        <button type="button" class="weapon-slot-pill active" data-weapon="ar" title="Pulse Blaster [1]">
+          <span class="slot-key">1</span>
+          <span class="slot-icon">⚡</span>
+          <div class="slot-info">
+            <span class="slot-name">PULSE AR</span>
+            <span class="slot-ammo" id="strip-ammo-ar">30/120</span>
+          </div>
+        </button>
+        <button type="button" class="weapon-slot-pill" data-weapon="shotgun" title="Voxel Shotgun [2]">
+          <span class="slot-key">2</span>
+          <span class="slot-icon">💥</span>
+          <div class="slot-info">
+            <span class="slot-name">SHOTGUN</span>
+            <span class="slot-ammo" id="strip-ammo-shotgun">6/36</span>
+          </div>
+        </button>
+        <button type="button" class="weapon-slot-pill" data-weapon="sniper" title="Cyber Sniper [3]">
+          <span class="slot-key">3</span>
+          <span class="slot-icon">🎯</span>
+          <div class="slot-info">
+            <span class="slot-name">SNIPER</span>
+            <span class="slot-ammo" id="strip-ammo-sniper">5/20</span>
+          </div>
+        </button>
+        <button type="button" class="weapon-slot-pill" data-weapon="smg" title="Neon SMG [4]">
+          <span class="slot-key">4</span>
+          <span class="slot-icon">⚡</span>
+          <div class="slot-info">
+            <span class="slot-name">NEON SMG</span>
+            <span class="slot-ammo" id="strip-ammo-smg">35/140</span>
+          </div>
+        </button>
+        <button type="button" class="weapon-slot-pill" data-weapon="pistol" title="Plasma Pistol [5]">
+          <span class="slot-key">5</span>
+          <span class="slot-icon">🔫</span>
+          <div class="slot-info">
+            <span class="slot-name">PISTOL</span>
+            <span class="slot-ammo" id="strip-ammo-pistol">12/60</span>
+          </div>
+        </button>
+      </div>
+
+      <!-- HUD Bottom Right: Weapon & Ammo Display -->
+      <div class="hud-bottom-right">
+        <div class="ammo-cluster">
+          <div class="weapon-meta">
+            <span id="hud-weapon-icon" class="w-icon">⚡</span>
+            <div class="weapon-title-block">
+              <span id="hud-weapon-name" class="w-name">Pulse Blaster</span>
+              <span id="hud-weapon-slot" class="w-slot">[ SLOT 1 ]</span>
+            </div>
+          </div>
+
+          <div class="ammo-numbers">
+            <span id="hud-ammo-mag" class="ammo-mag">30</span>
+            <span class="ammo-slash">/</span>
+            <span id="hud-ammo-reserve" class="ammo-reserve">120</span>
+          </div>
+
+          <div id="hud-reload-spinner" class="reload-spinner hidden">
+            <span>RELOADING...</span>
+          </div>
+
+          <!-- Animated Reload Progress Bar -->
+          <div id="hud-reload-bar-wrap" class="reload-bar-wrap hidden">
+            <div class="reload-bar-track">
+              <div id="hud-reload-bar-fill" class="reload-bar-fill"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BR Bottom Center Inventory Bar -->
+      <div id="hud-br-inventory" class="hud-br-inventory hidden">
+        <div class="br-inv-slot active" id="br-slot-primary" title="Primary Weapon [1]">
+          <span class="br-inv-key">1</span>
+          <span class="br-inv-icon">⚡</span>
+          <div class="br-inv-text">
+            <span class="br-inv-lbl">PRIMARY</span>
+            <span class="br-inv-name" id="br-name-primary">EMPTY</span>
+          </div>
+        </div>
+        <div class="br-inv-slot" id="br-slot-secondary" title="Secondary / Sidearm [2]">
+          <span class="br-inv-key">2</span>
+          <span class="br-inv-icon">🔫</span>
+          <div class="br-inv-text">
+            <span class="br-inv-lbl">SECONDARY</span>
+            <span class="br-inv-name" id="br-name-secondary">PLASMA PISTOL</span>
+          </div>
+        </div>
+        <div class="br-inv-slot" id="br-slot-medkit" title="Cyber Medkit [4 or C] - Click to Use">
+          <span class="br-inv-key">4</span>
+          <span class="br-inv-icon">🧰</span>
+          <div class="br-inv-text">
+            <span class="br-inv-lbl">MEDIC</span>
+            <span class="br-inv-name" id="br-name-medkit">Medkits: x0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Spectator Overlay Banner (BR) -->
+      <div id="spectator-overlay" class="spectator-banner hidden">
+        <div id="spec-elim-rank" class="spec-rank-badge">ELIMINATED - RANK #5 / 10</div>
+        <div class="spec-badge">SPECTATING</div>
+        <div id="spec-target-name" class="spec-name">Player Name</div>
+        <div class="spec-controls">
+          <button type="button" id="btn-spec-prev" class="btn-spec-nav">◀ PREV</button>
+          <button type="button" id="btn-spec-next" class="btn-spec-nav">NEXT ▶</button>
+          <button type="button" id="btn-spec-leave" class="btn-spec-leave">🚪 EXIT TO LOBBY</button>
+        </div>
+      </div>
+
+      <!-- Respawn Countdown Modal (TDM) & Death Killcam -->
+      <div id="respawn-modal" class="respawn-overlay hidden">
+        <div class="respawn-box">
+          <div class="respawn-title">ELIMINATED</div>
+          <div id="killcam-banner" class="killcam-card">
+            <span class="kc-label">KILLED BY</span>
+            <div id="killcam-killer-name" class="kc-name">CYBERSHADOW</div>
+            <div class="kc-weapon-wrap">
+              <span class="kc-w-icon">⚡</span>
+              <span id="killcam-killer-weapon" class="kc-weapon">PULSE RIFLE</span>
+            </div>
+          </div>
+          <div class="respawn-countdown">RESPAWNING IN <span id="respawn-timer-sec">3</span>s</div>
+          <div class="respawn-sub">Respawning at base with 3s invulnerability shield...</div>
+        </div>
+      </div>
+
+      <!-- Pickup / Notification Toast -->
+      <div id="pickup-toast" class="pickup-toast-box hidden">
+        <span id="toast-icon" class="pt-icon">✚</span>
+        <span id="toast-msg" class="pt-msg">+40 HEALTH RESTORED</span>
+      </div>
+
+      <!-- ================= 10. MOBILE TOUCH HUD ================= -->
+      <div id="mobile-touch-hud" class="mobile-hud hidden">
+        <!-- Floating Left Virtual Joystick Zone -->
+        <div id="touch-joystick-zone" class="touch-zone joystick-zone">
+          <div id="joystick-base" class="joystick-base">
+            <div id="joystick-thumb" class="joystick-thumb"></div>
+          </div>
+        </div>
+
+        <!-- Right Look & Aim Drag Zone -->
+        <div id="touch-look-zone" class="touch-zone look-zone"></div>
+
+        <!-- Action Buttons -->
+        <div class="mobile-actions-cluster">
+          <button type="button" id="mbtn-fire" class="mbtn mbtn-fire" title="Fire">
+            <span class="mbtn-glyph">🔥</span>
+            <span class="mbtn-lbl">FIRE</span>
+          </button>
+
+          <button type="button" id="mbtn-jump" class="mbtn mbtn-jump" title="Jump">
+            <span class="mbtn-glyph">▲</span>
+            <span class="mbtn-lbl">JUMP</span>
+          </button>
+
+          <button type="button" id="mbtn-dash" class="mbtn mbtn-dash" title="Dash Boost">
+            <span class="mbtn-glyph">⚡</span>
+            <span class="mbtn-lbl">DASH</span>
+          </button>
+
+          <button type="button" id="mbtn-ads" class="mbtn mbtn-ads" title="Aim Down Sights">
+            <span class="mbtn-glyph">🎯</span>
+            <span class="mbtn-lbl">ADS</span>
+          </button>
+
+          <button type="button" id="mbtn-reload" class="mbtn mbtn-reload" title="Reload Weapon">
+            <span class="mbtn-glyph">🔄</span>
+            <span class="mbtn-lbl">RELOAD</span>
+          </button>
+
+          <button type="button" id="mbtn-medic" class="mbtn mbtn-heal" title="Heal / Quick Medic">
+            <span class="mbtn-glyph">🧰</span>
+            <span class="mbtn-lbl">HEAL</span>
+          </button>
+
+          <button type="button" id="mbtn-pickup" class="mbtn mbtn-pickup hidden" title="Pick Up Loot">
+            <span class="mbtn-glyph">🖐️</span>
+            <span class="mbtn-lbl">LOOT</span>
+          </button>
+        </div>
+
+        <!-- Bottom Weapon Switch Tray -->
+        <div id="m-weapon-tray" class="m-weapon-tray">
+          <div class="m-weapon-tab active" data-weapon="ar">
+            <span class="mwt-icon">⚡</span>
+            <span class="mwt-name">AR</span>
+          </div>
+          <div class="m-weapon-tab" data-weapon="shotgun">
+            <span class="mwt-icon">💥</span>
+            <span class="mwt-name">SHOTGUN</span>
+          </div>
+          <div class="m-weapon-tab" data-weapon="sniper">
+            <span class="mwt-icon">🎯</span>
+            <span class="mwt-name">SNIPER</span>
+          </div>
+        </div>
+        <!-- Mobile Top-Right Header with Pause / Settings Button -->
+        <button type="button" id="mbtn-pause" class="mbtn-pause-hud" title="Tactical Pause / Settings">
+          <span>⚙️</span>
+        </button>
+      </div>
+
+    </div>
+    </div>
+
+    <!-- ================= 10B. IN-GAME PAUSE / ESCAPE / EXIT MODAL ================= -->
+    <div id="pauseMenu" class="pause-menu-mount">
+    <div id="in-game-pause-modal" class="modal-overlay hidden">
+      <div class="modal-dialog pause-dialog cyber-glass-card">
+        <div class="modal-header">
+          <div class="modal-title-wrap">
+            <span class="modal-glyph">⏸️</span>
+            <div>
+              <h2 class="modal-title">TACTICAL PAUSE</h2>
+              <p class="modal-subtitle">Combat Operations Suspended</p>
+            </div>
+          </div>
+          <button type="button" id="btn-close-pause-modal" class="modal-close-btn">&times;</button>
+        </div>
+
+        <div class="modal-body pause-body">
+          <button type="button" id="btn-resume-match" class="btn-pause-action btn-resume">
+            <span class="btn-icon">▶️</span>
+            <span>RESUME MATCH</span>
+          </button>
+
+          <div class="pause-settings-box">
+            <h4 class="settings-section-title">COMBAT SETTINGS</h4>
+            
+            <div class="settings-group">
+              <label class="settings-label">MASTER AUDIO</label>
+              <div class="settings-control-row">
+                <span>Sound Synthesis & FX</span>
+                <button type="button" id="btn-pause-audio-toggle" class="btn-settings-toggle">AUDIO: ON</button>
+              </div>
+            </div>
+
+            <div class="settings-group">
+              <label class="settings-label">MOUSE LOOK SENSITIVITY</label>
+              <div class="settings-slider-row">
+                <input type="range" id="pause-sensitivity-slider" min="1" max="10" value="5" class="cyber-slider">
+                <span id="pause-sensitivity-val" class="slider-val">5.0</span>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" id="btn-leave-match" class="btn-pause-action btn-leave-match">
+            <span class="btn-icon">🚪</span>
+            <span>LEAVE MATCH / EXIT TO LOBBY</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    </div>
+
+    <!-- ================= 10C. DEDICATED BR DEATH / ELIMINATION SCREEN (PHASE 4) ================= -->
+    <div id="deathScreen" class="modal-overlay hidden" style="display: none;">
+      <div class="match-end-card cyber-glass-card death-card-border">
+        <div class="end-header">
+          <div id="death-elim-title" class="end-banner elim-banner-red">YOU WERE ELIMINATED</div>
+          <div id="death-rank-val" class="end-sub elim-rank-text">RANK #5 / 10</div>
+          <div id="death-killer-info" class="death-killer-text">KILLED BY CYBERSHADOW</div>
+        </div>
+        <div class="death-actions-row">
+          <button type="button" id="btn-death-spectate" class="btn-action-secondary">
+            👁️ SPECTATE
+          </button>
+          <button type="button" id="btn-death-return-lobby" class="btn-action-secondary">
+            🚪 RETURN TO LOBBY
+          </button>
+          <button type="button" id="btn-death-rematch" class="btn-action-primary btn-rematch">
+            ⚡ REMATCH ▶
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= 11. MATCH END OVERLAY ================= -->
+    <div id="victoryScreen" class="victory-screen-mount">
+    <div id="match-end-modal" class="modal-overlay hidden">
+      <div class="match-end-card cyber-glass-card">
+        <div class="end-header">
+          <div id="end-victory-banner" class="end-banner">VICTORY ROYALE #1</div>
+          <div id="end-sub-banner" class="end-sub">MATCH CONCLUDED</div>
+        </div>
+
+        <div class="end-stats-grid">
+          <div class="end-stat-box">
+            <span class="es-val" id="end-stat-kills">0</span>
+            <span class="es-lbl">KILLS</span>
+          </div>
+          <div class="end-stat-box">
+            <span class="es-val" id="end-stat-damage">0</span>
+            <span class="es-lbl">DAMAGE DEALT</span>
+          </div>
+          <div class="end-stat-box">
+            <span class="es-val" id="end-stat-time">00:00</span>
+            <span class="es-lbl">TIME SURVIVED</span>
+          </div>
+          <div class="end-stat-box">
+            <span class="es-val" id="end-stat-score">0</span>
+            <span class="es-lbl">SCORE</span>
+          </div>
+        </div>
+
+        <!-- Leaderboard Table -->
+        <div class="end-leaderboard-wrap">
+          <div class="lb-title">MATCH LEADERBOARD</div>
+          <table class="lb-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>OPERATOR</th>
+                <th>TEAM</th>
+                <th>KILLS</th>
+                <th>DEATHS</th>
+                <th>SCORE</th>
+              </tr>
+            </thead>
+            <tbody id="end-leaderboard-rows">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="end-footer-actions">
+          <button type="button" id="btn-end-return-lobby" class="btn-action-secondary">
+            <span>← RETURN TO LOBBY</span>
+          </button>
+          <button type="button" id="btn-end-rematch" class="btn-action-primary btn-rematch">
+            <span>PLAY AGAIN / REMATCH ▶</span>
+          </button>
+        </div>
+      </div>
+      <!-- Confetti / Particle Fountain for Victory Royale -->
+      <canvas id="victory-confetti-canvas" class="victory-confetti-canvas hidden"></canvas>
+    </div>
+    </div>
+
+  </div>
+
+  <!-- Main Game Script (Authoritative Client Engine) -->
+  <script src="/js/game.js?v=8"></script>
+
+  <!-- ================= 12. AAA BATTLE LOBBY 3D PEDESTAL & UI CONTROLLER ================= -->
+  <script>
+    (function initBattleLobby() {
+      // Current active lobby mode ('tdm' or 'br')
+      let activeLobbyMode = 'tdm';
+
+      // 3D Pedestal and Mascot references
+      let lobbyGroup = null;
+      let mascotMesh = null;
+      let innerRing = null;
+           // --- 3D Lobby Stage Delegation & Viewport Drag Sync ---
+      function setupLobby3DStage() {
+        if (window.gameClient && window.gameClient.setupLobbyScene) {
+          window.gameClient.setupLobbyScene();
+        }
+      }
+
+      // --- Interactive Drag Rotation on Mascot Viewport ---
+      const viewport = document.getElementById('lobby-mascot-viewport');
+      if (viewport) {
+        viewport.addEventListener('mousedown', (e) => {
+          isLobbyDragging = true;
+          prevMouseX = e.clientX;
+          if (window.gameClient) window.gameClient.isDraggingMascot = true;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+          if (!isLobbyDragging) return;
+          const deltaX = e.clientX - prevMouseX;
+          prevMouseX = e.clientX;
+          if (window.gameClient) {
+            window.gameClient.lobbyMascotYaw += deltaX * 0.012;
+          }
+        });
+
+        window.addEventListener('mouseup', () => {
+          isLobbyDragging = false;
+          if (window.gameClient) window.gameClient.isDraggingMascot = false;
+        });
+
+        // Touch events for mobile dragging
+        viewport.addEventListener('touchstart', (e) => {
+          if (e.touches.length === 1) {
+            isLobbyDragging = true;
+            prevMouseX = e.touches[0].clientX;
+            if (window.gameClient) window.gameClient.isDraggingMascot = true;
+          }
+        }, { passive: true });
+
+        window.addEventListener('touchmove', (e) => {
+          if (!isLobbyDragging || e.touches.length === 0) return;
+          const deltaX = e.touches[0].clientX - prevMouseX;
+          prevMouseX = e.touches[0].clientX;
+          if (window.gameClient) {
+            window.gameClient.lobbyMascotYaw += deltaX * 0.014;
+          }
+        }, { passive: true });
+
+        window.addEventListener('touchend', () => {
+          isLobbyDragging = false;
+          if (window.gameClient) window.gameClient.isDraggingMascot = false;
+        });
+      }
+
+      // --- Modal Manager ---
+      function openModal(modalId) {
+        playUiClick();
+        closeAllModals();
+        const m = document.getElementById(modalId);
+        if (m) m.classList.remove('hidden');
+        const vp = document.getElementById('lobby-mascot-viewport');
+        if (vp) vp.style.pointerEvents = 'none';
+      }
+
+      function closeAllModals() {
+        document.querySelectorAll('.modal-overlay').forEach((m) => {
+          m.classList.add('hidden');
+        });
+        const vp = document.getElementById('lobby-mascot-viewport');
+        if (vp) vp.style.pointerEvents = 'auto';
+      }
+
+      // Universal Close Button Handler
+      document.querySelectorAll('.modal-close-btn').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          playUiClick();
+          const modal = btn.closest('.modal-overlay');
+          if (modal) modal.classList.add('hidden');
+          const vp = document.getElementById('lobby-mascot-viewport');
+          if (vp) vp.style.pointerEvents = 'auto';
+        });
+      });
+
+      // Backdrop click closes modal strictly when clicking the outer backdrop
+      document.querySelectorAll('.modal-overlay').forEach((overlay) => {
+        overlay.addEventListener('click', (e) => {
+          if (e.target === overlay) {
+            playUiClick();
+            overlay.classList.add('hidden');
+            const vp = document.getElementById('lobby-mascot-viewport');
+            if (vp) vp.style.pointerEvents = 'auto';
+          }
+        });
+      });
+
+      // Escape key returns to lobby
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          playUiClick();
+          closeAllModals();
+        }
+      });
+
+      // Prevent clicks inside all inner modal containers and dialog elements from bubbling to overlay
+      const innerModalSelectors = [
+        '.modal-overlay > *',
+        '.modal-dialog',
+        '.cyber-glass-card',
+        '.match-end-card',
+        '.modal-header',
+        '.modal-body',
+        '.modal-footer',
+        '.armory-content',
+        '.controls-content',
+        '.rooms-browser-content',
+        '.room-config-form',
+        '.settings-card',
+        '.end-body'
+      ].join(', ');
+
+      document.querySelectorAll(innerModalSelectors).forEach((container) => {
+        container.addEventListener('click', (e) => {
+          e.stopPropagation();
+        });
+        container.addEventListener('mousedown', (e) => {
+          e.stopPropagation();
+        });
+        container.addEventListener('pointerdown', (e) => {
+          e.stopPropagation();
+        });
+      });
+
+      // --- Mode Selector & Start Game Logic ---
+      function setLobbyMode(mode) {
+        activeLobbyMode = mode;
+        const badge = document.getElementById('lobby-selected-mode-badge');
+        const title = document.getElementById('lobby-selected-mode-title');
+        const sub = document.getElementById('lobby-selected-mode-sub');
+
+        if (mode === 'br') {
+          if (badge) { badge.textContent = 'BR 10-FFA'; badge.className = 'mode-type-badge br'; }
+          if (title) title.textContent = 'BATTLE ROYALE';
+          if (sub) sub.textContent = '10 Players • Glitch Storm • Permadeath';
+          document.querySelectorAll('.mode-big-card').forEach((c) => c.classList.remove('active'));
+          document.getElementById('mode-opt-br')?.classList.add('active');
+        } else {
+          if (badge) { badge.textContent = '4v4 TDM'; badge.className = 'mode-type-badge tdm'; }
+          if (title) title.textContent = 'TEAM DEATHMATCH';
+          if (sub) sub.textContent = 'Cyan vs Crimson • 40 Kills • Fast Respawns';
+          document.querySelectorAll('.mode-big-card').forEach((c) => c.classList.remove('active'));
+          document.getElementById('mode-opt-tdm')?.classList.add('active');
+        }
+      }
+
+      // Click Mode Selector card to open Mode Modal
+      document.getElementById('lobby-mode-selector')?.addEventListener('click', () => {
+        openModal('modal-mode-select');
+      });
+
+      document.getElementById('btn-close-mode-modal')?.addEventListener('click', () => {
+        playUiClick();
+        document.getElementById('modal-mode-select')?.classList.add('hidden');
+        closeAllModals();
+      });
+
+      // Mode choice buttons in Modal
+      document.querySelectorAll('.btn-choose-mode').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          playUiClick();
+          const mode = btn.dataset.mode || 'tdm';
+          setLobbyMode(mode);
+          closeAllModals();
+        });
+      });
+
+      document.querySelectorAll('.mode-big-card').forEach((card) => {
+        card.addEventListener('click', (e) => {
+          playUiClick();
+          const mode = card.dataset.mode || 'tdm';
+          setLobbyMode(mode);
+          closeAllModals();
+        });
+      });
+
+      // --- Giant START GAME Button ---
+      const giantStartBtn = document.getElementById('btn-giant-start');
+      giantStartBtn?.addEventListener('click', () => {
+        playUiClick();
+        const startLabel = document.getElementById('start-btn-label');
+        const startSub = document.getElementById('start-btn-sub');
+        if (startLabel) startLabel.textContent = 'MATCHMAKING...';
+        if (startSub) startSub.textContent = 'CONNECTING TO ARENA';
+
+        giantStartBtn.classList.add('pulsing-active');
+
+        // Trigger corresponding quick play event in game.js
+        if (activeLobbyMode === 'br') {
+          document.getElementById('btn-quick-br')?.click();
+        } else {
+          document.getElementById('btn-quick-tdm')?.click();
+        }
+
+        // Reset button text after 6s in case user returns
+        setTimeout(() => {
+          if (startLabel) startLabel.textContent = 'START GAME';
+          if (startSub) startSub.textContent = 'QUICK MATCHMAKING';
+          giantStartBtn.classList.remove('pulsing-active');
+        }, 6000);
+      });
+
+      // --- Vertical Quick-Action Tray Buttons ---
+      document.getElementById('btn-nav-rooms')?.addEventListener('click', () => {
+        openModal('modal-rooms');
+        if (window.gameClient && window.gameClient.refreshRoomsList) {
+          window.gameClient.refreshRoomsList();
+        }
+      });
+      document.getElementById('btn-close-rooms-modal')?.addEventListener('click', () => {
+        playUiClick();
+        closeAllModals();
+      });
+
+      document.getElementById('btn-nav-weapons')?.addEventListener('click', () => {
+        openModal('modal-weapons');
+      });
+      document.getElementById('btn-close-weapons-modal')?.addEventListener('click', () => {
+        playUiClick();
+        closeAllModals();
+      });
+
+      document.getElementById('btn-nav-controls')?.addEventListener('click', () => {
+        openModal('modal-controls');
+      });
+      document.getElementById('btn-close-controls-modal')?.addEventListener('click', () => {
+        playUiClick();
+        closeAllModals();
+      });
+
+      // Switch between custom rooms and create room
+      document.getElementById('btn-open-create-room')?.addEventListener('click', () => {
+        playUiClick();
+        document.getElementById('modal-rooms')?.classList.add('hidden');
+        document.getElementById('modal-create-room')?.classList.remove('hidden');
+      });
+
+      document.getElementById('btn-close-create-modal')?.addEventListener('click', () => {
+        playUiClick();
+        document.getElementById('modal-create-room')?.classList.add('hidden');
+        document.getElementById('modal-rooms')?.classList.remove('hidden');
+      });
+
+      document.getElementById('btn-cancel-create')?.addEventListener('click', () => {
+        playUiClick();
+        document.getElementById('modal-create-room')?.classList.add('hidden');
+        document.getElementById('modal-rooms')?.classList.remove('hidden');
+      });
+
+      // Controls Tabs Switcher in Modal
+      document.querySelectorAll('.tab-btn').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+          btn.classList.add('active');
+          const tabKey = btn.dataset.tab;
+          document.querySelectorAll('.controls-pane').forEach((p) => p.classList.remove('active'));
+          document.getElementById(`controls-pane-${tabKey}`)?.classList.add('active');
+          playUiClick();
+        });
+      });
+
+      // Settings Modal
+      const openSettings = () => openModal('modal-settings');
+      document.getElementById('btn-lobby-settings')?.addEventListener('click', openSettings);
+      document.getElementById('btn-close-settings-modal')?.addEventListener('click', () => {
+        playUiClick();
+        closeAllModals();
+      });
+      document.getElementById('btn-done-settings')?.addEventListener('click', () => {
+        playUiClick();
+        closeAllModals();
+      });
+
+      // Settings Audio Toggle
+      const settingsAudioBtn = document.getElementById('btn-settings-audio-toggle');
+      settingsAudioBtn?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.getElementById('btn-lobby-audio')?.click();
+        const isMuted = window.sounds && window.sounds.masterMuted;
+        if (settingsAudioBtn) {
+          settingsAudioBtn.textContent = isMuted ? 'AUDIO: MUTED' : 'AUDIO: ON';
+          settingsAudioBtn.style.color = isMuted ? 'var(--crimson)' : 'var(--cyan)';
+        }
+      });
+
+      // Settings Fullscreen Toggle
+      document.getElementById('btn-settings-fs-toggle')?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.getElementById('btn-lobby-fullscreen')?.click();
+      });
+
+      // Settings Sensitivity Slider
+      const sensSlider = document.getElementById('settings-sensitivity-slider');
+      const sensVal = document.getElementById('settings-sensitivity-val');
+      sensSlider?.addEventListener('input', (e) => {
+        if (sensVal) sensVal.textContent = parseFloat(e.target.value).toFixed(1);
+        if (window.gameClient) {
+          window.gameClient.mouseSensitivity = parseFloat(e.target.value) * 0.0004;
+        }
+      });
+
+      // --- Sync Weapon Selection with 3D Mascot Model ---
+      document.querySelectorAll('.weapon-card').forEach((card) => {
+        card.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const wKey = card.dataset.weapon;
+          if (wKey) {
+            document.querySelectorAll('.weapon-card').forEach((c) => c.classList.remove('active'));
+            card.classList.add('active');
+            if (window.gameClient && window.gameClient.switchWeapon) {
+              window.gameClient.switchWeapon(wKey);
+              window.gameClient.updateWeaponTelemetry(wKey);
+            }
+            updateLobbyWeaponModel(wKey);
+            // Update button text on weapon cards
+            document.querySelectorAll('.weapon-card .btn-equip-weapon').forEach((b) => b.textContent = 'EQUIP');
+            const activeBtn = card.querySelector('.btn-equip-weapon');
+            if (activeBtn) activeBtn.textContent = 'EQUIPPED';
+            playUiClick();
+          }
+        });
+      });
+
+      // Equip button inside Weapon Card also equips and can close modal
+      document.querySelectorAll('.btn-equip-weapon').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const card = btn.closest('.weapon-card');
+          if (card) {
+            card.click();
+            setTimeout(() => {
+              closeAllModals();
+            }, 300);
+          }
+        });
+      });
+
+      // --- Simulated Ping Jitter for Real-Time Feel ---
+      setInterval(() => {
+        const pingEl = document.getElementById('lobby-ping-val');
+        if (pingEl) {
+          const base = 22 + Math.floor(Math.random() * 8);
+          pingEl.textContent = `${base}ms`;
+        }
+      }, 4000);
+
+      // Initialize Three.js 3D stage once DOM is ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupLobby3DStage);
+      } else {
+        setupLobby3DStage();
+      }
+    })();
+  </script>
+</body>
+</html>
