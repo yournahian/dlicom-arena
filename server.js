@@ -20,6 +20,7 @@ const TICK_INTERVAL = 1000 / TICK_RATE;
 // Serve public directory
 app.use(express.static(path.join(__dirname, 'public')));
 app.get('/api/health', (req, res) => res.json({ status: 'healthy', version: '2.5.0' }));
+app.get('/healthz', (req, res) => res.status(200).send('OK'));
 
 // Helper random room code generator (e.g. "CBR7")
 function generateRoomCode() {
