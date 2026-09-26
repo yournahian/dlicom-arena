@@ -864,7 +864,7 @@ class CyberWarfareClient {
   constructor() {
     this.canvas = document.getElementById('game-canvas');
     this.socket = null;
-    this.isTouch = ('ontouchstart' in window) && (window.innerWidth <= 800 || (navigator.maxTouchPoints > 1 && !window.matchMedia('(pointer: fine)').matches));
+    this.isTouch = this.detectDeviceMode();
 
     // Networking State
     this.selfId = null;
@@ -1000,7 +1000,6 @@ class CyberWarfareClient {
     this.mouseButtons = { left: false, right: false };
     this.isPointerLocked = false;
     this.mouseSensitivity = 0.0022;
-    this.isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || window.matchMedia('(pointer: coarse)').matches;
     this.touchJoystick = { x: 0, y: 0, active: false, isSprint: false };
     this.activeTouches = {
       joystick: null, // { id, startX, startY, currentX, currentY }
@@ -1021,7 +1020,89 @@ class CyberWarfareClient {
     this.init();
   }
 
+  detectDeviceMode() {
+    // 1. URL parameter override: ?mode=pc or ?mode=mobile
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('mode') === 'mobile') return true;
+      if (urlParams.get('mode') === 'pc') return false;
+    } catch (e) { }
+
+    // 2. Saved preference in localStorage
+    try {
+      const saved = localStorage.getItem('dlicom_device_mode');
+      if (saved === 'mobile') return true;
+      if (saved === 'pc') return false;
+    } catch (e) { }
+
+    // 3. User agent & hardware input detection
+    const ua = navigator.userAgent || '';
+    const isMobileUA = /Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(ua) ||
+      (/iPad/i.test(ua)) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    const hasFinePointer = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
+    const isCoarseOnly = window.matchMedia && window.matchMedia('(pointer: coarse)').matches && !hasFinePointer;
+
+    // Mobile phones or touch tablets without mouse -> Mobile touch mode
+    if (isMobileUA || isCoarseOnly) {
+      return true;
+    }
+
+    // Default: Desktop PC / Laptop with mouse/keyboard -> PC mode!
+    return false;
+  }
+
+  setDeviceMode(isMobile) {
+    this.isTouch = !!isMobile;
+    try {
+      localStorage.setItem('dlicom_device_mode', this.isTouch ? 'mobile' : 'pc');
+    } catch (e) { }
+    this.updateDeviceModeUI();
+  }
+
+  toggleDeviceMode() {
+    this.setDeviceMode(!this.isTouch);
+    this.showToast(this.isTouch ? 'Switched to MOBILE Touch Controls' : 'Switched to PC Desktop (Mouse/Keyboard)', 'cyan');
+  }
+
+  updateDeviceModeUI() {
+    const icon = document.getElementById('device-mode-icon');
+    const lbl = document.getElementById('device-mode-lbl');
+    if (icon) icon.textContent = this.isTouch ? '📱' : '🖥️';
+    if (lbl) lbl.textContent = this.isTouch ? 'MOBILE' : 'PC MODE';
+
+    const settingsDesc = document.getElementById('settings-device-mode-desc');
+    const settingsBtn = document.getElementById('btn-settings-device-toggle');
+    if (settingsDesc) settingsDesc.textContent = this.isTouch ? '📱 Mobile Touch Screen' : '🖥️ Desktop PC (Mouse & Keyboard)';
+    if (settingsBtn) settingsBtn.textContent = this.isTouch ? 'SWITCH TO PC' : 'SWITCH TO MOBILE';
+
+    const pauseDesc = document.getElementById('pause-device-mode-desc');
+    const pauseBtn = document.getElementById('btn-pause-device-toggle');
+    if (pauseDesc) pauseDesc.textContent = this.isTouch ? '📱 Mobile Touch Screen' : '🖥️ Desktop PC (Mouse/KB)';
+    if (pauseBtn) pauseBtn.textContent = this.isTouch ? 'SWITCH TO PC' : 'SWITCH TO MOBILE';
+
+    if (this.isTouch) {
+      document.body.classList.add('mobile-mode-enabled');
+      if (this.inMatch) {
+        document.body.classList.add('mobile-hud-active');
+        document.getElementById('mobile-touch-hud')?.classList.remove('hidden');
+        this.checkOrientationNotice();
+      }
+    } else {
+      document.body.classList.remove('mobile-mode-enabled', 'mobile-hud-active');
+      document.getElementById('mobile-touch-hud')?.classList.add('hidden');
+      document.getElementById('orientation-overlay')?.classList.add('hidden');
+      if (this.inMatch) {
+        document.getElementById('hud-weapon-strip')?.classList.remove('hidden');
+        document.getElementById('hud-bottom-right')?.classList.remove('hidden');
+        document.getElementById('hud-tdm-bar')?.classList.remove('hidden');
+      }
+    }
+  }
+
   init() {
+    this.updateDeviceModeUI();
     this.initNetwork();
     this.initThree();
     this.buildLobbyScene();
@@ -1389,6 +1470,7 @@ class CyberWarfareClient {
         }, 3000);
 
         document.getElementById('respawn-modal')?.classList.add('hidden');
+        document.body.classList.remove('player-eliminated');
         this.updateHudVitals();
         this.updateHudAmmo();
       } else {
@@ -1669,11 +1751,10 @@ class CyberWarfareClient {
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(window.innerWidth, window.innerHeight);
     }
-    const isMobile = this.isTouch || window.innerWidth <= 1024;
-    if (this.inMatch && isMobile) {
+    if (this.inMatch && this.isTouch) {
       document.body.classList.add('mobile-hud-active');
       document.getElementById('mobile-touch-hud')?.classList.remove('hidden');
-    } else if (this.inMatch && !this.isTouch && window.innerWidth > 1024) {
+    } else if (this.inMatch && !this.isTouch) {
       document.body.classList.remove('mobile-hud-active');
       document.getElementById('mobile-touch-hud')?.classList.add('hidden');
     }
@@ -1684,7 +1765,7 @@ class CyberWarfareClient {
     const overlay = document.getElementById('orientation-overlay');
     if (!overlay) return;
     const isPortrait = window.innerHeight > window.innerWidth;
-    if (this.inMatch && isPortrait) {
+    if (this.inMatch && isPortrait && this.isTouch) {
       overlay.classList.remove('hidden');
     } else {
       overlay.classList.add('hidden');
@@ -4224,6 +4305,23 @@ class CyberWarfareClient {
       }
     });
 
+    // Device Mode Switcher (PC / Mobile)
+    document.getElementById('btn-device-mode-toggle')?.addEventListener('click', () => {
+      sounds.init();
+      sounds.playClick();
+      this.toggleDeviceMode();
+    });
+    document.getElementById('btn-settings-device-toggle')?.addEventListener('click', () => {
+      sounds.init();
+      sounds.playClick();
+      this.toggleDeviceMode();
+    });
+    document.getElementById('btn-pause-device-toggle')?.addEventListener('click', () => {
+      sounds.init();
+      sounds.playClick();
+      this.toggleDeviceMode();
+    });
+
     // Spectator Prev/Next Target
     document.getElementById('btn-spec-prev')?.addEventListener('click', () => {
       this.socket.emit('cycleSpectate');
@@ -4630,8 +4728,7 @@ class CyberWarfareClient {
       if (this.stormMesh) this.stormMesh.visible = false;
     }
 
-    const isMobile = this.isTouch || window.innerWidth <= 1024;
-    if (isMobile) {
+    if (this.isTouch) {
       document.body.classList.add('mobile-hud-active');
       document.getElementById('mobile-touch-hud')?.classList.remove('hidden');
     } else {
@@ -4717,7 +4814,7 @@ class CyberWarfareClient {
     document.getElementById('loot-proximity-prompt')?.classList.add('hidden');
     document.getElementById('hud-reload-spinner')?.classList.add('hidden');
     document.getElementById('hud-reload-bar-wrap')?.classList.add('hidden');
-    document.body.classList.remove('mobile-hud-active');
+    document.body.classList.remove('mobile-hud-active', 'player-eliminated');
     document.getElementById('mobile-touch-hud')?.classList.add('hidden');
     document.getElementById('orientation-overlay')?.classList.add('hidden');
     document.getElementById('respawn-modal')?.classList.add('hidden');
@@ -5048,8 +5145,8 @@ class CyberWarfareClient {
 
     // Global touchstart handler
     const handleTouchStart = (e) => {
-      // Auto-detect mobile touch environment on first touch
-      this.isTouch = true;
+      // Only process gameplay touch controls if mobile touch mode is active
+      if (!this.isTouch) return;
 
       // If not in match or game is paused, let standard UI events pass through
       if (!this.inMatch || this.isPaused) return;
@@ -5214,7 +5311,7 @@ class CyberWarfareClient {
 
     // Global touchmove handler
     const handleTouchMove = (e) => {
-      if (!this.inMatch || this.isPaused) return;
+      if (!this.inMatch || this.isPaused || !this.isTouch) return;
       e.preventDefault();
 
       const maxRadius = 45;
@@ -5276,7 +5373,7 @@ class CyberWarfareClient {
 
     // Global touchend & touchcancel handler
     const handleTouchEnd = (e) => {
-      if (!this.inMatch) return;
+      if (!this.inMatch || !this.isTouch) return;
 
       for (let i = 0; i < e.changedTouches.length; i++) {
         const touch = e.changedTouches[i];
@@ -6135,6 +6232,8 @@ class CyberWarfareClient {
 
     if (!modal || !timerSec) return;
 
+    document.body.classList.add('player-eliminated');
+
     const teamPrefix = killerTeam ? (killerTeam === 'red' ? '[Red] ' : '[Blue] ') : '';
     if (killerEl && killerName) killerEl.textContent = `${teamPrefix}${killerName}`.toUpperCase();
     if (weaponEl && killerWeapon) weaponEl.textContent = killerWeapon.toUpperCase();
@@ -6149,6 +6248,7 @@ class CyberWarfareClient {
       if (remain <= 0) {
         clearInterval(intv);
         modal.classList.add('hidden');
+        document.body.classList.remove('player-eliminated');
       }
     }, 1000);
   }
@@ -6159,6 +6259,7 @@ class CyberWarfareClient {
     this.camera.fov = 75;
     this.camera.rotation.order = 'XYZ';
     this.camera.updateProjectionMatrix();
+    document.body.classList.remove('player-eliminated');
     document.getElementById('cyber-sniper-scope')?.classList.add('hidden');
     document.getElementById('crosshair')?.classList.remove('hidden');
     document.getElementById('hud-overlay')?.classList.add('hidden');

@@ -154,6 +154,12 @@
               <span class="btn-lbl">SETTINGS</span>
             </button>
 
+            <!-- Device Mode Switcher (PC / Mobile) -->
+            <button type="button" id="btn-device-mode-toggle" class="util-btn device-toggle-btn" title="Switch between PC Desktop (Mouse/Keyboard) and Mobile Touch Controls">
+              <span id="device-mode-icon" class="btn-icon">🖥️</span>
+              <span id="device-mode-lbl" class="btn-lbl">PC MODE</span>
+            </button>
+
             <!-- Fullscreen button -->
             <button type="button" id="btn-lobby-fullscreen" class="util-btn" title="Toggle Fullscreen">
               <span class="btn-icon">⛶</span>
@@ -695,6 +701,14 @@
             <div class="settings-slider-row">
               <input type="range" id="settings-sensitivity-slider" min="1" max="10" value="5" class="cyber-slider">
               <span id="settings-sensitivity-val" class="slider-val">5.0</span>
+            </div>
+          </div>
+
+          <div class="settings-group">
+            <label class="settings-label">CONTROL SCHEME & DEVICE DISPLAY</label>
+            <div class="settings-control-row">
+              <span id="settings-device-mode-desc">Desktop PC (Mouse & Keyboard)</span>
+              <button type="button" id="btn-settings-device-toggle" class="btn-settings-toggle">SWITCH TO MOBILE</button>
             </div>
           </div>
 
@@ -1401,6 +1415,14 @@
               <div class="settings-slider-row">
                 <input type="range" id="pause-sensitivity-slider" min="1" max="10" value="5" class="cyber-slider">
                 <span id="pause-sensitivity-val" class="slider-val">5.0</span>
+              </div>
+            </div>
+
+            <div class="settings-group">
+              <label class="settings-label">CONTROL SCHEME & DISPLAY</label>
+              <div class="settings-control-row">
+                <span id="pause-device-mode-desc">Desktop PC (Mouse/KB)</span>
+                <button type="button" id="btn-pause-device-toggle" class="btn-settings-toggle">SWITCH TO MOBILE</button>
               </div>
             </div>
           </div>

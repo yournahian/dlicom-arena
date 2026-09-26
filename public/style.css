@@ -224,19 +224,21 @@ canvas, #game-canvas {
 .boot-container {
   position: relative;
   z-index: 5;
-  width: 620px;
-  max-width: 90vw;
+  width: 580px;
+  max-width: 95vw;
+  max-height: 94vh;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   text-align: center;
-  gap: 20px;
-  padding: 30px;
+  gap: clamp(6px, 1.8vh, 18px);
+  padding: clamp(10px, 2vh, 24px);
 }
 
 .boot-icon-wrap {
-  width: 96px;
-  height: 96px;
+  width: clamp(48px, 12vh, 88px);
+  height: clamp(48px, 12vh, 88px);
   position: relative;
   display: flex;
   align-items: center;
@@ -350,21 +352,21 @@ canvas, #game-canvas {
 .btn-enter-boot {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  padding: 14px 28px;
+  gap: 10px;
+  padding: clamp(8px, 1.8vh, 14px) clamp(16px, 3vw, 28px);
   background: linear-gradient(135deg, rgba(0, 246, 255, 0.2), rgba(16, 185, 129, 0.25));
   border: 1.5px solid #00f6ff;
   border-radius: 12px;
   color: #ffffff;
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: clamp(11px, 2vh, 13px);
   font-weight: 800;
   letter-spacing: 1.5px;
   cursor: pointer;
   box-shadow: 0 0 25px rgba(0, 246, 255, 0.4), inset 0 0 15px rgba(0, 246, 255, 0.15);
   transition: all 0.25s ease;
   animation: enterBtnPulse 1.4s infinite alternate ease-in-out;
-  margin-top: 10px;
+  margin-top: 4px;
 }
 
 .btn-enter-boot:hover {
@@ -3085,41 +3087,60 @@ body.mode-tdm .hud-br-inventory {
 
 /* Respawn Overlay */
 .respawn-overlay {
-  position: absolute;
+  position: fixed;
   inset: 0;
-  background: rgba(255, 0, 55, 0.15);
-  backdrop-filter: blur(4px);
+  background: rgba(3, 7, 18, 0.92);
+  backdrop-filter: blur(10px);
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 10000 !important;
 }
 
 .respawn-box {
-  background: rgba(3, 7, 18, 0.85);
-  border: 1px solid var(--crimson);
+  background: rgba(3, 7, 18, 0.94);
+  border: 1.5px solid var(--crimson);
   border-radius: 16px;
-  padding: 24px 36px;
+  padding: clamp(12px, 2.5vh, 24px) clamp(16px, 4vw, 36px);
   text-align: center;
-  box-shadow: 0 0 30px var(--crimson-glow);
+  box-shadow: 0 0 35px var(--crimson-glow);
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(4px, 1.2vh, 12px);
 }
 
 .respawn-title {
   font-family: var(--font-display);
-  font-size: 28px;
+  font-size: clamp(18px, 4vh, 26px);
   font-weight: 900;
   color: var(--crimson);
+  letter-spacing: 2px;
 }
 
 .killcam-card {
-  margin: 12px 0 16px;
-  padding: 10px 18px;
-  background: rgba(255, 0, 55, 0.1);
+  margin: 0;
+  padding: clamp(6px, 1.5vh, 10px) clamp(12px, 3vw, 20px);
+  background: rgba(255, 0, 55, 0.12);
   border: 1px dashed var(--crimson);
   border-radius: 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
+}
+
+/* Hide in-game HUD & Mobile touch buttons during killcam / respawn */
+body.player-eliminated .hud-bottom-left,
+body.player-eliminated #mobile-touch-hud,
+body.player-eliminated #hud-weapon-strip,
+body.player-eliminated .hud-bottom-right,
+body.player-eliminated .vitals-cluster,
+body.player-eliminated #crosshair {
+  display: none !important;
 }
 
 .kc-label {
@@ -3539,75 +3560,7 @@ body.mobile-hud-active .hud-minimap-container .minimap-header {
   margin-bottom: 2px;
 }
 
-/* Also apply automatically via media query for mobile/tablet screens */
-@media (max-width: 1024px), (max-height: 500px) {
-  #hud-weapon-strip,
-  .hud-weapon-strip,
-  .hud-bottom-right,
-  .ammo-cluster,
-  #hud-pointer-lock-prompt,
-  .medic-slots-tray {
-    display: none !important;
-  }
 
-  .hud-bottom-left {
-    position: absolute;
-    bottom: 46px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: auto;
-    pointer-events: none;
-    z-index: 106;
-  }
-
-  .vitals-cluster {
-    background: rgba(3, 7, 18, 0.78);
-    backdrop-filter: blur(8px);
-    padding: 3px 8px;
-    border-radius: 8px;
-    border: 1px solid rgba(0, 246, 255, 0.25);
-    width: 200px;
-    gap: 2px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
-  }
-
-  .meter-row {
-    gap: 5px;
-  }
-
-  .meter-icon {
-    font-size: 10px;
-    width: 14px;
-  }
-
-  .meter-bar-frame {
-    height: 5px;
-    border-radius: 3px;
-  }
-
-  .meter-val {
-    font-size: 10px;
-    width: 22px;
-  }
-
-  .hud-minimap-container {
-    top: 8px;
-    left: 8px;
-    width: 90px;
-    height: 90px;
-    padding: 4px;
-  }
-
-  .hud-minimap-container .minimap-viewport {
-    width: 78px;
-    height: 78px;
-  }
-
-  .hud-minimap-container .minimap-header {
-    font-size: 8px;
-    margin-bottom: 2px;
-  }
-}
 
 /* Orientation Hint Overlay */
 .orientation-overlay {
@@ -3882,26 +3835,57 @@ body.mobile-hud-active .hud-minimap-container .minimap-header {
     font-size: 24px;
   }
 
+  /* Compact Horizontal Bottom Dock: NEVER STACK VERTICALLY */
   .lobby-bottom-anchor {
-    flex-direction: column-reverse;
-    align-items: stretch;
-    width: 100%;
-    gap: 12px;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 10px;
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: calc(100% - 24px);
   }
 
-  .mode-selector-card {
-    width: 100%;
-    padding: 10px 14px;
+  .mode-selector-card,
+  .map-selector-card {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+    padding: 8px 10px;
+    border-radius: 10px;
+  }
+
+  .mode-display-title,
+  .map-display-title {
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .mode-display-sub,
+  .map-display-sub {
+    display: none;
   }
 
   .btn-giant-start {
-    width: 100%;
-    height: 64px;
-    min-width: unset;
+    flex: 1.2;
+    min-width: 140px;
+    width: auto;
+    height: 52px;
+    padding: 0 16px;
+    border-radius: 12px;
   }
 
   .start-label {
-    font-size: 20px;
+    font-size: 15px;
+  }
+
+  .start-subtext {
+    font-size: 9px;
   }
 
   .mode-cards-grid,
@@ -3910,6 +3894,72 @@ body.mobile-hud-active .hud-minimap-container .minimap-header {
   .keybind-grid,
   .mobile-guide-layout {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Compact Lobby Scaling for Low-Height Screens (Laptops / Landscape Phones) */
+@media (max-height: 550px) {
+  .lobby-hud-frame {
+    padding: clamp(6px, 1.5vh, 12px) clamp(10px, 2vw, 18px);
+  }
+
+  .player-profile-card {
+    padding: 4px 10px;
+    gap: 8px;
+  }
+
+  .avatar-ring-wrapper {
+    width: 42px;
+    height: 42px;
+  }
+
+  #mascot-avatar-canvas {
+    width: 38px;
+    height: 38px;
+  }
+
+  .avatar-level-badge {
+    font-size: 8px;
+    padding: 1px 4px;
+    bottom: -3px;
+    right: -2px;
+  }
+
+  .nickname-input {
+    font-size: 13px;
+    width: 100px;
+  }
+
+  .profile-rank-sub {
+    font-size: 9px;
+  }
+
+  .lobby-util-bar {
+    gap: 6px;
+  }
+
+  .util-btn {
+    padding: 4px 8px;
+    height: 32px;
+  }
+
+  .lobby-bottom-anchor {
+    bottom: 8px;
+    left: 8px;
+    right: 8px;
+    gap: 8px;
+  }
+
+  .btn-giant-start {
+    height: 42px;
+  }
+
+  .start-label {
+    font-size: 13px;
+  }
+
+  .start-subtext {
+    font-size: 8px;
   }
 }
 
