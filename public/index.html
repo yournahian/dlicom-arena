@@ -1473,11 +1473,20 @@
       // Current active lobby mode ('tdm' or 'br')
       let activeLobbyMode = 'tdm';
 
-      // 3D Pedestal and Mascot references
-      let lobbyGroup = null;
-      let mascotMesh = null;
-      let innerRing = null;
-           // --- 3D Lobby Stage Delegation & Viewport Drag Sync ---
+      let isLobbyDragging = false;
+      let prevMouseX = 0;
+
+      // Helper for sound triggers
+      function playUiClick() {
+        try {
+          if (window.sounds) {
+            sounds.init();
+            sounds.playClick();
+          }
+        } catch (err) {}
+      }
+
+      // --- 3D Lobby Stage Delegation & Viewport Drag Sync ---
       function setupLobby3DStage() {
         if (window.gameClient && window.gameClient.setupLobbyScene) {
           window.gameClient.setupLobbyScene();
@@ -1540,6 +1549,7 @@
         const vp = document.getElementById('lobby-mascot-viewport');
         if (vp) vp.style.pointerEvents = 'none';
       }
+      window.openModal = openModal;
 
       function closeAllModals() {
         document.querySelectorAll('.modal-overlay').forEach((m) => {
@@ -1548,6 +1558,7 @@
         const vp = document.getElementById('lobby-mascot-viewport');
         if (vp) vp.style.pointerEvents = 'auto';
       }
+      window.closeAllModals = closeAllModals;
 
       // Universal Close Button Handler
       document.querySelectorAll('.modal-close-btn').forEach((btn) => {
