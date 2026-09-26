@@ -1669,8 +1669,13 @@ class CyberWarfareClient {
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(window.innerWidth, window.innerHeight);
     }
-    if (this.inMatch && (this.isTouch || window.innerWidth <= 1024)) {
+    const isMobile = this.isTouch || window.innerWidth <= 1024;
+    if (this.inMatch && isMobile) {
+      document.body.classList.add('mobile-hud-active');
       document.getElementById('mobile-touch-hud')?.classList.remove('hidden');
+    } else if (this.inMatch && !this.isTouch && window.innerWidth > 1024) {
+      document.body.classList.remove('mobile-hud-active');
+      document.getElementById('mobile-touch-hud')?.classList.add('hidden');
     }
     this.checkOrientationNotice();
   }
@@ -4625,12 +4630,14 @@ class CyberWarfareClient {
       if (this.stormMesh) this.stormMesh.visible = false;
     }
 
-    if (!this.isTouch) {
-      try { this.canvas.requestPointerLock?.(); } catch (err) {}
-    }
-
-    if (this.isTouch || window.innerWidth <= 1024) {
+    const isMobile = this.isTouch || window.innerWidth <= 1024;
+    if (isMobile) {
+      document.body.classList.add('mobile-hud-active');
       document.getElementById('mobile-touch-hud')?.classList.remove('hidden');
+    } else {
+      document.body.classList.remove('mobile-hud-active');
+      document.getElementById('mobile-touch-hud')?.classList.add('hidden');
+      try { this.canvas.requestPointerLock?.(); } catch (err) {}
     }
     this.checkOrientationNotice();
 
@@ -4710,6 +4717,7 @@ class CyberWarfareClient {
     document.getElementById('loot-proximity-prompt')?.classList.add('hidden');
     document.getElementById('hud-reload-spinner')?.classList.add('hidden');
     document.getElementById('hud-reload-bar-wrap')?.classList.add('hidden');
+    document.body.classList.remove('mobile-hud-active');
     document.getElementById('mobile-touch-hud')?.classList.add('hidden');
     document.getElementById('orientation-overlay')?.classList.add('hidden');
     document.getElementById('respawn-modal')?.classList.add('hidden');
@@ -6924,10 +6932,16 @@ class CyberWarfareClient {
 
     // Update mobile weapon tabs
     document.querySelectorAll('.m-weapon-tab').forEach((tab) => {
-      if (tab.dataset.weapon === this.player.weapon) {
+      const pWeapon = tab.dataset.weapon;
+      if (pWeapon === this.player.weapon) {
         tab.classList.add('active');
       } else {
         tab.classList.remove('active');
+      }
+      const pAmmo = this.player.ammo[pWeapon];
+      const ammoEl = tab.querySelector('.mwt-ammo');
+      if (ammoEl && pAmmo) {
+        ammoEl.textContent = `${pAmmo.mag}`;
       }
     });
   }

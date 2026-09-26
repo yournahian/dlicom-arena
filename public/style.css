@@ -3186,13 +3186,43 @@ body.mode-tdm .hud-br-inventory {
   user-select: none;
   -webkit-user-select: none;
   cursor: pointer;
+  background: rgba(11, 20, 38, 0.78);
+  border: 1.5px solid var(--border-neon);
+  border-radius: 50%;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6), inset 0 0 8px rgba(0, 246, 255, 0.12);
+  backdrop-filter: blur(6px);
+  transition: transform 0.08s ease, background 0.15s ease;
+}
+
+.touch-action-btn:active {
+  transform: scale(0.92);
+  background: var(--cyan);
+  color: #030712;
+}
+
+.touch-action-btn .mbtn-glyph {
+  font-size: 17px;
+  line-height: 1;
+}
+
+.touch-action-btn .mbtn-lbl {
+  font-family: var(--font-display);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  margin-top: 1px;
 }
 
 /* Dynamic Floating Virtual Joystick */
 .joystick-base {
   position: fixed;
-  width: 124px;
-  height: 124px;
+  width: 110px;
+  height: 110px;
   background: radial-gradient(circle, rgba(0, 246, 255, 0.08) 0%, rgba(3, 7, 18, 0.65) 100%);
   border: 2px solid rgba(0, 246, 255, 0.38);
   border-radius: 50%;
@@ -3202,20 +3232,20 @@ body.mode-tdm .hud-br-inventory {
   transform: translate(-50%, -50%);
   pointer-events: none;
   z-index: 105;
-  box-shadow: 0 0 24px rgba(0, 246, 255, 0.22), inset 0 0 16px rgba(0, 246, 255, 0.12);
+  box-shadow: 0 0 20px rgba(0, 246, 255, 0.2), inset 0 0 14px rgba(0, 246, 255, 0.12);
   transition: opacity 0.2s ease;
-  left: 90px;
-  bottom: 80px;
+  left: 65px;
+  bottom: 50px;
   opacity: 0.35;
 }
 
 .joystick-thumb {
-  width: 52px;
-  height: 52px;
+  width: 46px;
+  height: 46px;
   background: radial-gradient(circle, #00f6ff 30%, #0284c7 100%);
-  border: 2.5px solid #ffffff;
+  border: 2px solid #ffffff;
   border-radius: 50%;
-  box-shadow: 0 0 16px #00f6ff, 0 0 32px rgba(0, 246, 255, 0.55);
+  box-shadow: 0 0 14px #00f6ff, 0 0 28px rgba(0, 246, 255, 0.55);
   position: absolute;
   pointer-events: none;
   transform: translate(0px, 0px);
@@ -3230,25 +3260,25 @@ body.mode-tdm .hud-br-inventory {
 .j-arr {
   position: absolute;
   color: rgba(0, 246, 255, 0.4);
-  font-size: 11px;
+  font-size: 10px;
 }
-.j-up { top: 6px; left: 50%; transform: translateX(-50%); }
-.j-down { bottom: 6px; left: 50%; transform: translateX(-50%); }
-.j-left { left: 6px; top: 50%; transform: translateY(-50%); }
-.j-right { right: 6px; top: 50%; transform: translateY(-50%); }
+.j-up { top: 4px; left: 50%; transform: translateX(-50%); }
+.j-down { bottom: 4px; left: 50%; transform: translateX(-50%); }
+.j-left { left: 4px; top: 50%; transform: translateY(-50%); }
+.j-right { right: 4px; top: 50%; transform: translateY(-50%); }
 
-/* Left-Hand Claw Fire Button (PUBG Feature) */
+/* Left-Hand Claw Fire Button (Positioned clear of minimap) */
 .mbtn-claw-fire {
   position: absolute;
-  top: 90px;
-  left: 24px;
-  width: 56px;
-  height: 56px;
+  top: 10px;
+  left: 108px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 0, 85, 0.45) 0%, rgba(15, 23, 42, 0.85) 100%);
-  border: 2px solid rgba(255, 0, 85, 0.7);
+  background: radial-gradient(circle, rgba(255, 0, 85, 0.5) 0%, rgba(15, 23, 42, 0.88) 100%);
+  border: 2px solid rgba(255, 0, 85, 0.8);
   color: #fff;
-  font-size: 22px;
+  font-size: 19px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3269,168 +3299,135 @@ body.mode-tdm .hud-br-inventory {
   pointer-events: none;
 }
 
-.touch-action-btn {
-  background: rgba(11, 20, 38, 0.75);
-  border: 1.5px solid var(--border-neon);
-  border-radius: 50%;
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(0, 246, 255, 0.1);
-  backdrop-filter: blur(6px);
-  transition: transform 0.08s ease, background 0.15s ease;
-}
-
-.touch-action-btn:active {
-  transform: scale(0.92);
-  background: var(--cyan);
-  color: #030712;
-}
-
-.touch-action-btn .mbtn-glyph {
-  font-size: 19px;
-  line-height: 1;
-}
-
-.touch-action-btn .mbtn-lbl {
-  font-family: var(--font-display);
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  margin-top: 2px;
-}
-
-/* 1. Large Primary Fire Button (68px) */
+/* 1. Large Primary Fire Button (64px) */
 .mbtn-primary-fire {
   position: absolute;
-  bottom: 28px;
-  right: 25px;
-  width: 68px;
-  height: 68px;
+  bottom: 16px;
+  right: 18px;
+  width: 64px;
+  height: 64px;
   background: radial-gradient(circle, #ff0055 25%, #be123c 100%);
   border: 2.5px solid #fda4af;
-  box-shadow: 0 0 24px var(--crimson-glow), inset 0 0 12px rgba(255, 255, 255, 0.35);
+  box-shadow: 0 0 22px var(--crimson-glow), inset 0 0 10px rgba(255, 255, 255, 0.35);
   z-index: 110;
 }
 
 .mbtn-primary-fire:active {
   background: #ff0055;
-  box-shadow: 0 0 35px #ff0055;
+  box-shadow: 0 0 32px #ff0055;
 }
 
 /* 2. ADS (Scope) Button */
 .mbtn-ads {
   position: absolute;
-  bottom: 40px;
-  right: 108px;
-  width: 56px;
-  height: 56px;
-  background: rgba(11, 20, 38, 0.85);
+  bottom: 22px;
+  right: 90px;
+  width: 48px;
+  height: 48px;
+  background: rgba(11, 20, 38, 0.88);
   border-color: var(--cyan);
-  box-shadow: 0 0 15px rgba(0, 246, 255, 0.25);
+  box-shadow: 0 0 14px rgba(0, 246, 255, 0.25);
   z-index: 110;
 }
 
 .mbtn-ads.active-ads {
   background: var(--cyan);
   color: #000;
-  box-shadow: 0 0 25px var(--cyan);
+  box-shadow: 0 0 22px var(--cyan);
 }
 
-/* 3. Jump Button */
+/* 3. Jump Button (Above Fire) */
 .mbtn-jump {
   position: absolute;
-  bottom: 116px;
-  right: 28px;
-  width: 56px;
-  height: 56px;
-  border-color: rgba(255, 255, 255, 0.35);
+  bottom: 86px;
+  right: 24px;
+  width: 48px;
+  height: 48px;
+  border-color: rgba(255, 255, 255, 0.4);
   z-index: 110;
 }
 
 /* 4. Dash / Sprint Button */
 .mbtn-dash {
   position: absolute;
-  bottom: 116px;
-  right: 100px;
-  width: 54px;
-  height: 54px;
+  bottom: 80px;
+  right: 84px;
+  width: 44px;
+  height: 44px;
   border-color: var(--amber);
   color: var(--amber);
-  box-shadow: 0 0 15px rgba(245, 158, 11, 0.25);
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.25);
   z-index: 110;
 }
 
-/* 5. Reload Button */
+/* 5. Reload Button (Horizontally aligned with bottom row) */
 .mbtn-reload {
   position: absolute;
-  bottom: 188px;
-  right: 32px;
-  width: 48px;
-  height: 48px;
+  bottom: 24px;
+  right: 146px;
+  width: 42px;
+  height: 42px;
   border-color: rgba(0, 246, 255, 0.4);
-  font-size: 16px;
+  font-size: 15px;
   z-index: 110;
 }
 
-/* 6. Quick Heal Button */
+/* 6. Quick Heal Button (Above reload, clear of top bar) */
 .mbtn-heal {
   position: absolute;
-  bottom: 188px;
-  right: 94px;
-  width: 48px;
-  height: 48px;
+  bottom: 76px;
+  right: 138px;
+  width: 42px;
+  height: 42px;
   background: radial-gradient(circle, #059669 20%, #064e3b 100%);
   border-color: #6ee7b7;
-  box-shadow: 0 0 15px rgba(16, 185, 129, 0.35);
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.35);
   z-index: 110;
 }
 
 /* 7. Loot Pickup Button */
 .mbtn-pickup {
   position: absolute;
-  bottom: 250px;
-  right: 36px;
-  width: 50px;
-  height: 50px;
+  bottom: 128px;
+  right: 138px;
+  width: 42px;
+  height: 42px;
   background: radial-gradient(circle, #f59e0b 20%, #78350f 100%);
   border: 2px solid #fde68a;
-  box-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+  box-shadow: 0 0 18px rgba(245, 158, 11, 0.5);
   z-index: 110;
 }
 
 /* 8. Weapon Strip (Bottom Center) */
 .m-weapon-tray {
   position: absolute;
-  bottom: 14px;
+  bottom: 8px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
-  gap: 6px;
-  background: rgba(3, 7, 18, 0.85);
+  gap: 4px;
+  background: rgba(3, 7, 18, 0.88);
   backdrop-filter: blur(10px);
-  border: 1.5px solid rgba(0, 246, 255, 0.3);
-  border-radius: 12px;
-  padding: 4px 6px;
+  border: 1px solid rgba(0, 246, 255, 0.3);
+  border-radius: 10px;
+  padding: 3px 5px;
   pointer-events: auto;
   z-index: 110;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.7);
 }
 
 .m-weapon-tab {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 6px 10px;
-  border-radius: 8px;
+  gap: 4px;
+  padding: 4px 7px;
+  border-radius: 6px;
   color: var(--text-muted);
   font-family: var(--font-display);
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
   cursor: pointer;
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(15, 23, 42, 0.65);
   border: 1px solid rgba(255, 255, 255, 0.08);
   touch-action: none;
 }
@@ -3438,26 +3435,178 @@ body.mode-tdm .hud-br-inventory {
 .m-weapon-tab.active {
   background: var(--cyan);
   color: #030712;
-  box-shadow: 0 0 12px var(--cyan-glow);
+  box-shadow: 0 0 10px var(--cyan-glow);
   border-color: #ffffff;
+}
+
+.mwt-ammo {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-dim);
+  margin-left: 2px;
+}
+
+.m-weapon-tab.active .mwt-ammo {
+  color: #030712;
+  font-weight: 900;
 }
 
 /* 9. Mobile Top-Right Pause Button */
 .mbtn-pause-hud {
   position: absolute;
-  top: 14px;
-  right: 14px;
-  width: 44px;
-  height: 44px;
+  top: 8px;
+  right: 8px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
-  background: rgba(11, 20, 38, 0.85);
+  background: rgba(11, 20, 38, 0.88);
   border: 1.5px solid var(--border-neon);
   color: #fff;
-  font-size: 18px;
+  font-size: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 110;
+}
+
+/* ---------------- MOBILE HUD ACTIVE: HIDE DESKTOP HUD & REPOSITION VITALS ---------------- */
+body.mobile-hud-active #hud-weapon-strip,
+body.mobile-hud-active .hud-weapon-strip,
+body.mobile-hud-active .hud-bottom-right,
+body.mobile-hud-active .ammo-cluster,
+body.mobile-hud-active #hud-pointer-lock-prompt,
+body.mobile-hud-active .medic-slots-tray {
+  display: none !important;
+}
+
+/* PUBG Mobile Standard: Vitals (Health & Armor) Centered Above Weapon Tray */
+body.mobile-hud-active .hud-bottom-left {
+  position: absolute;
+  bottom: 46px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: auto;
+  pointer-events: none;
+  z-index: 106;
+}
+
+body.mobile-hud-active .vitals-cluster {
+  background: rgba(3, 7, 18, 0.78);
+  backdrop-filter: blur(8px);
+  padding: 3px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 246, 255, 0.25);
+  width: 200px;
+  gap: 2px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+}
+
+body.mobile-hud-active .meter-row {
+  gap: 5px;
+}
+
+body.mobile-hud-active .meter-icon {
+  font-size: 10px;
+  width: 14px;
+}
+
+body.mobile-hud-active .meter-bar-frame {
+  height: 5px;
+  border-radius: 3px;
+}
+
+body.mobile-hud-active .meter-val {
+  font-size: 10px;
+  width: 22px;
+}
+
+/* Compact Minimap on Mobile */
+body.mobile-hud-active .hud-minimap-container {
+  top: 8px;
+  left: 8px;
+  width: 90px;
+  height: 90px;
+  padding: 4px;
+}
+
+body.mobile-hud-active .hud-minimap-container .minimap-viewport {
+  width: 78px;
+  height: 78px;
+}
+
+body.mobile-hud-active .hud-minimap-container .minimap-header {
+  font-size: 8px;
+  margin-bottom: 2px;
+}
+
+/* Also apply automatically via media query for mobile/tablet screens */
+@media (max-width: 1024px), (max-height: 500px) {
+  #hud-weapon-strip,
+  .hud-weapon-strip,
+  .hud-bottom-right,
+  .ammo-cluster,
+  #hud-pointer-lock-prompt,
+  .medic-slots-tray {
+    display: none !important;
+  }
+
+  .hud-bottom-left {
+    position: absolute;
+    bottom: 46px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: auto;
+    pointer-events: none;
+    z-index: 106;
+  }
+
+  .vitals-cluster {
+    background: rgba(3, 7, 18, 0.78);
+    backdrop-filter: blur(8px);
+    padding: 3px 8px;
+    border-radius: 8px;
+    border: 1px solid rgba(0, 246, 255, 0.25);
+    width: 200px;
+    gap: 2px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+  }
+
+  .meter-row {
+    gap: 5px;
+  }
+
+  .meter-icon {
+    font-size: 10px;
+    width: 14px;
+  }
+
+  .meter-bar-frame {
+    height: 5px;
+    border-radius: 3px;
+  }
+
+  .meter-val {
+    font-size: 10px;
+    width: 22px;
+  }
+
+  .hud-minimap-container {
+    top: 8px;
+    left: 8px;
+    width: 90px;
+    height: 90px;
+    padding: 4px;
+  }
+
+  .hud-minimap-container .minimap-viewport {
+    width: 78px;
+    height: 78px;
+  }
+
+  .hud-minimap-container .minimap-header {
+    font-size: 8px;
+    margin-bottom: 2px;
+  }
 }
 
 /* Orientation Hint Overlay */
