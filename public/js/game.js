@@ -1201,6 +1201,8 @@ class CyberWarfareClient {
     this.initMascotAvatarCanvas();
     this.initUIEventListeners();
     this.initInputControls();
+    this.initHudCustomizer();
+    this.applySavedHUDLayout();
     this.initBootLoadingScreen();
 
     // Check URL Query Param for direct room join (e.g. ?room=CYB7)
@@ -4747,6 +4749,7 @@ class CyberWarfareClient {
       try { this.canvas.requestPointerLock?.(); } catch (err) {}
     }
     this.checkOrientationNotice();
+    this.applySavedHUDLayout();
 
     this.keys = {};
     this.mouseButtons = { left: false, right: false };
@@ -4864,6 +4867,11 @@ class CyberWarfareClient {
     document.getElementById('hud-reload-bar-wrap')?.classList.add('hidden');
     document.body.classList.remove('mobile-hud-active', 'player-eliminated');
     document.getElementById('mobile-touch-hud')?.classList.add('hidden');
+    document.getElementById('hud-customizer-overlay')?.classList.add('hidden');
+    if (this.isHudEditing) {
+      this.isHudEditing = false;
+      document.body.classList.remove('hud-edit-mode');
+    }
     document.getElementById('orientation-overlay')?.classList.add('hidden');
     document.getElementById('respawn-modal')?.classList.add('hidden');
     document.getElementById('br-countdown-banner')?.classList.add('hidden');
@@ -5218,6 +5226,7 @@ class CyberWarfareClient {
 
     // Global touchstart handler
     const handleTouchStart = (e) => {
+      if (this.isHudEditing) return;
       // Strictly bail out if desktop platform or touch disabled
       if (!this.isTouch || detectPlatform().isDesktop) return;
 
@@ -5229,7 +5238,7 @@ class CyberWarfareClient {
         const target = document.elementFromPoint(touch.clientX, touch.clientY) || touch.target;
 
         // Skip touches on modal overlays, staging screen, or pause dialog
-        if (target && (target.closest('.modal-overlay') || target.closest('#in-game-pause-modal') || target.closest('#match-end-modal') || target.closest('#staging-screen') || target.closest('#respawn-modal'))) {
+        if (target && (target.closest('.modal-overlay') || target.closest('#in-game-pause-modal') || target.closest('#match-end-modal') || target.closest('#staging-screen') || target.closest('#respawn-modal') || target.closest('#hud-customizer-overlay'))) {
           continue;
         }
 
@@ -5384,6 +5393,7 @@ class CyberWarfareClient {
 
     // Global touchmove handler
     const handleTouchMove = (e) => {
+      if (this.isHudEditing) return;
       if (!this.inMatch || this.isPaused || !this.isTouch || detectPlatform().isDesktop) return;
       e.preventDefault();
 
@@ -5446,6 +5456,7 @@ class CyberWarfareClient {
 
     // Global touchend & touchcancel handler
     const handleTouchEnd = (e) => {
+      if (this.isHudEditing) return;
       if (!this.inMatch || !this.isTouch || detectPlatform().isDesktop) return;
 
       for (let i = 0; i < e.changedTouches.length; i++) {
@@ -5459,12 +5470,13 @@ class CyberWarfareClient {
           this.touchJoystick.y = 0;
           this.touchJoystick.isSprint = false;
 
-          // Return joystick base to resting state
+          // Return joystick base to user's configured resting state
+          const savedJoy = this.currentHudLayout?.joystick || this.DEFAULT_HUD_LAYOUT?.joystick;
           if (jBase) {
-            jBase.style.left = '';
-            jBase.style.top = '';
-            jBase.style.bottom = '';
-            jBase.style.opacity = '0.35';
+            jBase.style.left = savedJoy?.left || '16%';
+            jBase.style.top = savedJoy?.top || '76%';
+            jBase.style.bottom = 'auto';
+            jBase.style.opacity = `${savedJoy?.opacity != null ? savedJoy.opacity : 0.45}`;
           }
           if (jThumb) {
             jThumb.style.transform = 'translate(0px, 0px)';
@@ -5506,6 +5518,363 @@ class CyberWarfareClient {
     document.getElementById('loot-proximity-prompt')?.addEventListener('click', () => {
       this.attemptLootPickup();
     });
+  }
+
+  // -------------------------------------------------------------
+  // 10D. CUSTOM MOBILE HUD LAYOUT & BUTTON CUSTOMIZER ENGINE
+  // -------------------------------------------------------------
+  initHudCustomizer() {
+    this.DEFAULT_HUD_LAYOUT = {
+      fireBtn: { left: "88%", top: "78%", scale: 1.0, opacity: 0.9 },
+      leftFireBtn: { left: "14%", top: "18%", scale: 1.0, opacity: 0.85 },
+      adsBtn: { left: "78%", top: "82%", scale: 1.0, opacity: 0.88 },
+      jumpBtn: { left: "90%", top: "58%", scale: 1.0, opacity: 0.85 },
+      dashBtn: { left: "80%", top: "62%", scale: 1.0, opacity: 0.85 },
+      reloadBtn: { left: "70%", top: "84%", scale: 1.0, opacity: 0.85 },
+      healBtn: { left: "72%", top: "68%", scale: 1.0, opacity: 0.85 },
+      lootBtn: { left: "72%", top: "52%", scale: 1.0, opacity: 0.85 },
+      weaponTray: { left: "50%", top: "92%", scale: 1.0, opacity: 0.9 },
+      joystick: { left: "16%", top: "76%", scale: 1.0, opacity: 0.45 },
+      pauseBtn: { left: "95%", top: "6%", scale: 1.0, opacity: 0.85 }
+    };
+
+    this.HUD_MAP = {
+      fireBtn: 'mbtn-fire',
+      leftFireBtn: 'mbtn-fire-left',
+      adsBtn: 'mbtn-ads',
+      jumpBtn: 'mbtn-jump',
+      dashBtn: 'mbtn-dash',
+      reloadBtn: 'mbtn-reload',
+      healBtn: 'mbtn-medic',
+      lootBtn: 'mbtn-pickup',
+      weaponTray: 'm-weapon-tray',
+      joystick: 'joystick-base',
+      pauseBtn: 'mbtn-pause'
+    };
+
+    this.HUD_NAMES = {
+      fireBtn: 'PRIMARY FIRE BUTTON',
+      leftFireBtn: 'LEFT CLAW FIRE BUTTON',
+      adsBtn: 'ADS / SCOPE BUTTON',
+      jumpBtn: 'JUMP IMPULSE BUTTON',
+      dashBtn: 'DASH / SPRINT BUTTON',
+      reloadBtn: 'RELOAD AMMO BUTTON',
+      healBtn: 'QUICK HEAL / MEDKIT',
+      lootBtn: 'PROXIMITY LOOT BUTTON',
+      weaponTray: 'WEAPON QUICK-SWITCH TRAY',
+      joystick: 'VIRTUAL MOVEMENT JOYSTICK',
+      pauseBtn: 'TACTICAL PAUSE / SETTINGS'
+    };
+
+    this.isHudEditing = false;
+    this.selectedHudKey = 'fireBtn';
+    this.currentEditingHud = null;
+    this.hudEditOrigin = 'lobby';
+
+    // Toolbar triggers
+    document.getElementById('btn-settings-custom-hud')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      sounds.init();
+      sounds.playClick();
+      this.enterHudEditMode('settings');
+    });
+
+    document.getElementById('btn-pause-custom-hud')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      sounds.init();
+      sounds.playClick();
+      this.enterHudEditMode('pause');
+    });
+
+    document.getElementById('btn-hud-save')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      sounds.init();
+      sounds.playClick();
+      this.saveCustomHUD();
+    });
+
+    document.getElementById('btn-hud-reset')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      sounds.init();
+      sounds.playClick();
+      this.resetCustomHUD();
+    });
+
+    document.getElementById('btn-hud-cancel')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      sounds.init();
+      sounds.playClick();
+      this.exitHudEditMode(false);
+    });
+
+    // Sliders
+    const scaleSlider = document.getElementById('het-scale-slider');
+    const scaleVal = document.getElementById('het-scale-val');
+    scaleSlider?.addEventListener('input', (e) => {
+      if (!this.isHudEditing || !this.selectedHudKey || !this.currentEditingHud) return;
+      const val = parseInt(e.target.value, 10);
+      const scale = val / 100;
+      this.currentEditingHud[this.selectedHudKey].scale = scale;
+      if (scaleVal) scaleVal.textContent = `${val}%`;
+      this.applySingleHudElement(this.selectedHudKey, this.currentEditingHud[this.selectedHudKey]);
+    });
+
+    const opacitySlider = document.getElementById('het-opacity-slider');
+    const opacityVal = document.getElementById('het-opacity-val');
+    opacitySlider?.addEventListener('input', (e) => {
+      if (!this.isHudEditing || !this.selectedHudKey || !this.currentEditingHud) return;
+      const val = parseInt(e.target.value, 10);
+      const op = Math.max(0.1, val / 100);
+      this.currentEditingHud[this.selectedHudKey].opacity = op;
+      if (opacityVal) opacityVal.textContent = `${val}%`;
+      this.applySingleHudElement(this.selectedHudKey, this.currentEditingHud[this.selectedHudKey]);
+    });
+
+    // Setup interactive touch & mouse dragging on each HUD element
+    this.setupHudDragging();
+  }
+
+  setupHudDragging() {
+    let activeDrag = null;
+
+    const startDrag = (key, clientX, clientY, e) => {
+      if (!this.isHudEditing) return;
+      e.preventDefault();
+      e.stopPropagation();
+      this.selectHudButton(key);
+
+      activeDrag = {
+        key,
+        startX: clientX,
+        startY: clientY
+      };
+    };
+
+    const moveDrag = (clientX, clientY, e) => {
+      if (!this.isHudEditing || !activeDrag || !this.currentEditingHud) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      const pctX = Math.max(4, Math.min(96, (clientX / window.innerWidth) * 100));
+      const pctY = Math.max(6, Math.min(94, (clientY / window.innerHeight) * 100));
+
+      this.currentEditingHud[activeDrag.key].left = `${pctX.toFixed(1)}%`;
+      this.currentEditingHud[activeDrag.key].top = `${pctY.toFixed(1)}%`;
+
+      this.applySingleHudElement(activeDrag.key, this.currentEditingHud[activeDrag.key]);
+    };
+
+    const endDrag = (e) => {
+      if (!this.isHudEditing || !activeDrag) return;
+      activeDrag = null;
+    };
+
+    // Attach to each HUD button element
+    for (const [key, id] of Object.entries(this.HUD_MAP)) {
+      const el = document.getElementById(id);
+      if (!el) continue;
+
+      el.addEventListener('mousedown', (e) => {
+        if (this.isHudEditing) startDrag(key, e.clientX, e.clientY, e);
+      });
+
+      el.addEventListener('touchstart', (e) => {
+        if (this.isHudEditing && e.changedTouches && e.changedTouches[0]) {
+          const t = e.changedTouches[0];
+          startDrag(key, t.clientX, t.clientY, e);
+        }
+      }, { passive: false });
+    }
+
+    // Global move & up
+    window.addEventListener('mousemove', (e) => moveDrag(e.clientX, e.clientY, e));
+    window.addEventListener('mouseup', endDrag);
+
+    window.addEventListener('touchmove', (e) => {
+      if (this.isHudEditing && activeDrag && e.changedTouches && e.changedTouches[0]) {
+        const t = e.changedTouches[0];
+        moveDrag(t.clientX, t.clientY, e);
+      }
+    }, { passive: false });
+
+    window.addEventListener('touchend', endDrag);
+    window.addEventListener('touchcancel', endDrag);
+  }
+
+  enterHudEditMode(origin = 'lobby') {
+    this.isHudEditing = true;
+    this.hudEditOrigin = origin;
+
+    // Hide origin dialogs
+    if (origin === 'settings') {
+      document.getElementById('modal-settings')?.classList.add('hidden');
+    } else if (origin === 'pause') {
+      document.getElementById('in-game-pause-modal')?.classList.add('hidden');
+      const pm = document.getElementById('pauseMenu');
+      if (pm) pm.style.display = 'none';
+    }
+
+    // Enter HUD Edit Mode DOM State
+    document.body.classList.add('hud-edit-mode');
+    document.getElementById('hud-customizer-overlay')?.classList.remove('hidden');
+
+    const touchHud = document.getElementById('mobile-touch-hud');
+    if (touchHud) {
+      touchHud.classList.remove('hidden');
+      touchHud.style.display = 'block';
+    }
+
+    // Ensure hidden contextual buttons (like loot pickup) are visible in edit mode
+    const lootBtn = document.getElementById('mbtn-pickup');
+    if (lootBtn) {
+      lootBtn.classList.remove('hidden');
+      lootBtn.style.display = 'flex';
+    }
+
+    // Load saved or default layout
+    const saved = localStorage.getItem('dlicom_custom_hud');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        this.currentEditingHud = JSON.parse(JSON.stringify(Object.assign({}, this.DEFAULT_HUD_LAYOUT, parsed)));
+      } catch (e) {
+        this.currentEditingHud = JSON.parse(JSON.stringify(this.DEFAULT_HUD_LAYOUT));
+      }
+    } else {
+      this.currentEditingHud = JSON.parse(JSON.stringify(this.DEFAULT_HUD_LAYOUT));
+    }
+
+    // Apply layout to screen
+    this.renderHudLayout(this.currentEditingHud);
+
+    // Auto-select primary fire
+    this.selectHudButton('fireBtn');
+  }
+
+  selectHudButton(key) {
+    if (!this.HUD_MAP[key]) return;
+    this.selectedHudKey = key;
+
+    // Remove selection highlight from all elements
+    for (const [, id] of Object.entries(this.HUD_MAP)) {
+      document.getElementById(id)?.classList.remove('hud-element-selected');
+    }
+
+    // Add selection to active element
+    const elId = this.HUD_MAP[key];
+    const el = document.getElementById(elId);
+    if (el) el.classList.add('hud-element-selected');
+
+    // Update Toolbar Display
+    const nameEl = document.getElementById('het-selected-name');
+    if (nameEl) nameEl.textContent = this.HUD_NAMES[key] || 'BUTTON';
+
+    const cfg = this.currentEditingHud?.[key] || this.DEFAULT_HUD_LAYOUT[key];
+    if (cfg) {
+      const scaleSlider = document.getElementById('het-scale-slider');
+      const scaleVal = document.getElementById('het-scale-val');
+      const scalePct = Math.round((cfg.scale || 1.0) * 100);
+      if (scaleSlider) scaleSlider.value = scalePct;
+      if (scaleVal) scaleVal.textContent = `${scalePct}%`;
+
+      const opacitySlider = document.getElementById('het-opacity-slider');
+      const opacityVal = document.getElementById('het-opacity-val');
+      const opacityPct = Math.round((cfg.opacity != null ? cfg.opacity : 1.0) * 100);
+      if (opacitySlider) opacitySlider.value = opacityPct;
+      if (opacityVal) opacityVal.textContent = `${opacityPct}%`;
+    }
+  }
+
+  applySingleHudElement(key, cfg) {
+    const id = this.HUD_MAP[key];
+    const el = document.getElementById(id);
+    if (!el || !cfg) return;
+
+    el.style.position = 'fixed';
+    el.style.left = cfg.left;
+    el.style.top = cfg.top;
+    el.style.right = 'auto';
+    el.style.bottom = 'auto';
+    el.style.transformOrigin = 'center center';
+    el.style.transform = `translate(-50%, -50%) scale(${cfg.scale || 1.0})`;
+    el.style.opacity = `${cfg.opacity != null ? cfg.opacity : 1.0}`;
+  }
+
+  renderHudLayout(layout) {
+    for (const [key, cfg] of Object.entries(layout)) {
+      this.applySingleHudElement(key, cfg);
+    }
+  }
+
+  saveCustomHUD() {
+    if (!this.currentEditingHud) return;
+
+    localStorage.setItem('dlicom_custom_hud', JSON.stringify(this.currentEditingHud));
+    this.showToast('✅ CUSTOM HUD LAYOUT SAVED!', 'cyan');
+    this.exitHudEditMode(true);
+  }
+
+  resetCustomHUD() {
+    this.currentEditingHud = JSON.parse(JSON.stringify(this.DEFAULT_HUD_LAYOUT));
+    this.renderHudLayout(this.currentEditingHud);
+    this.selectHudButton(this.selectedHudKey || 'fireBtn');
+    this.showToast('↺ HUD RESET TO FACTORY PRESET', 'amber');
+  }
+
+  exitHudEditMode(saved = false) {
+    this.isHudEditing = false;
+    document.body.classList.remove('hud-edit-mode');
+    document.getElementById('hud-customizer-overlay')?.classList.add('hidden');
+
+    // Remove selection highlight
+    for (const [, id] of Object.entries(this.HUD_MAP)) {
+      document.getElementById(id)?.classList.remove('hud-element-selected');
+    }
+
+    if (saved) {
+      this.applySavedHUDLayout();
+    } else {
+      // Revert to previously saved
+      this.applySavedHUDLayout();
+    }
+
+    // Hide touch hud if not in match or if desktop
+    if (!this.inMatch || !this.isTouch) {
+      const touchHud = document.getElementById('mobile-touch-hud');
+      if (touchHud) {
+        touchHud.classList.add('hidden');
+        touchHud.style.display = 'none';
+      }
+    }
+
+    // Contextual button resets (e.g. loot)
+    const lootBtn = document.getElementById('mbtn-pickup');
+    if (lootBtn && !this.nearestLootItem) {
+      lootBtn.classList.add('hidden');
+      lootBtn.style.display = 'none';
+    }
+
+    // Restore origin dialog
+    if (this.hudEditOrigin === 'settings') {
+      document.getElementById('modal-settings')?.classList.remove('hidden');
+    } else if (this.hudEditOrigin === 'pause' && this.inMatch) {
+      this.openPauseMenu();
+    }
+  }
+
+  applySavedHUDLayout() {
+    let layout = this.DEFAULT_HUD_LAYOUT;
+    const saved = localStorage.getItem('dlicom_custom_hud');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        layout = Object.assign({}, this.DEFAULT_HUD_LAYOUT, parsed);
+      } catch (err) {
+        layout = this.DEFAULT_HUD_LAYOUT;
+      }
+    }
+    this.currentHudLayout = layout;
+    this.renderHudLayout(layout);
   }
 
   // -------------------------------------------------------------

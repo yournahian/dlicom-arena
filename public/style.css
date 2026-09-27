@@ -5161,3 +5161,369 @@ body.platform-mobile .start-subtext {
   transform: translateY(-2px);
 }
 
+/* ==========================================================================
+   CUSTOM MOBILE HUD LAYOUT & BUTTON CUSTOMIZER SYSTEM (PUBG & FREE FIRE STYLE)
+   ========================================================================== */
+
+/* Settings & Pause Menu Trigger Button */
+.btn-settings-action-hud {
+  padding: 8px 16px;
+  background: linear-gradient(135deg, rgba(0, 246, 255, 0.16) 0%, rgba(15, 23, 42, 0.9) 100%);
+  border: 1.5px solid var(--cyan, #00f6ff);
+  border-radius: 8px;
+  color: #fff;
+  font-family: var(--font-display, sans-serif);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  cursor: pointer;
+  box-shadow: 0 0 14px rgba(0, 246, 255, 0.25), inset 0 0 8px rgba(0, 246, 255, 0.15);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-settings-action-hud:hover {
+  background: var(--cyan, #00f6ff);
+  color: #030712;
+  box-shadow: 0 0 24px rgba(0, 246, 255, 0.7);
+  transform: translateY(-1px);
+}
+
+/* Fullscreen Edit Mode Overlay */
+.hud-customizer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99990;
+  pointer-events: none;
+  background: radial-gradient(circle at center, rgba(3, 7, 18, 0.25) 0%, rgba(3, 7, 18, 0.7) 100%);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+/* Floating Top Control Toolbar */
+.hud-editor-toolbar {
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(96vw, 980px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 16px;
+  background: rgba(3, 7, 18, 0.94);
+  border: 1.5px solid var(--border-neon, #00f6ff);
+  border-radius: 14px;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 12px 38px rgba(0, 0, 0, 0.88), 0 0 25px rgba(0, 246, 255, 0.35);
+  pointer-events: auto !important;
+  z-index: 100010 !important;
+}
+
+.het-left {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 170px;
+}
+
+.het-badge-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.het-icon {
+  font-size: 14px;
+  filter: drop-shadow(0 0 6px var(--cyan, #00f6ff));
+}
+
+.het-title {
+  font-family: var(--font-display, sans-serif);
+  font-size: 13px;
+  font-weight: 900;
+  color: #fff;
+  letter-spacing: 1px;
+}
+
+.het-target-wrap {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+}
+
+.het-target-lbl {
+  font-family: var(--font-mono, monospace);
+  color: var(--text-dim, #94a3b8);
+  font-size: 10px;
+}
+
+.het-selected-name {
+  font-family: var(--font-display, sans-serif);
+  font-weight: 800;
+  color: #ffd700;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.6);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  max-width: 180px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Sliders Cluster */
+.het-sliders-cluster {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+  justify-content: center;
+  max-width: 440px;
+}
+
+.het-slider-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+}
+
+.het-slider-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 10px;
+}
+
+.het-sl-title {
+  font-family: var(--font-display, sans-serif);
+  font-weight: 800;
+  color: var(--text-dim, #94a3b8);
+  letter-spacing: 0.5px;
+}
+
+.het-sl-val {
+  font-family: var(--font-mono, monospace);
+  font-weight: 800;
+  color: var(--cyan, #00f6ff);
+  text-shadow: 0 0 8px rgba(0, 246, 255, 0.5);
+}
+
+.het-slider {
+  width: 100%;
+  height: 6px;
+  -webkit-appearance: none;
+  background: rgba(15, 23, 42, 0.9);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 246, 255, 0.3);
+  outline: none;
+}
+
+.het-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--cyan, #00f6ff);
+  cursor: pointer;
+  box-shadow: 0 0 10px #00f6ff;
+  border: 2px solid #fff;
+  transition: transform 0.1s ease;
+}
+
+.het-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+/* Action Buttons Cluster */
+.het-actions-cluster {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-het-action {
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-family: var(--font-display, sans-serif);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.btn-het-icon {
+  font-size: 11px;
+}
+
+.btn-het-reset {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(245, 158, 11, 0.6);
+  color: #fbbf24;
+}
+
+.btn-het-reset:hover {
+  background: #f59e0b;
+  color: #000;
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.6);
+}
+
+.btn-het-cancel {
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  color: #cbd5e1;
+}
+
+.btn-het-cancel:hover {
+  background: #475569;
+  color: #fff;
+}
+
+.btn-het-save {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  border: 1.5px solid #6ee7b7;
+  color: #fff;
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.4);
+}
+
+.btn-het-save:hover {
+  background: #10b981;
+  box-shadow: 0 0 24px rgba(16, 185, 129, 0.8);
+  transform: translateY(-1px);
+}
+
+/* Subtle Alignment Grid Lines */
+.hud-editor-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.he-guide {
+  position: absolute;
+  border: 1px dashed rgba(0, 246, 255, 0.12);
+  pointer-events: none;
+}
+
+.he-guide-cx { top: 0; bottom: 0; left: 50%; transform: translateX(-50%); border-right: none; }
+.he-guide-cy { left: 0; right: 0; top: 50%; transform: translateY(-50%); border-bottom: none; }
+.he-guide-lx { top: 0; bottom: 0; left: 25%; border-right: none; border-color: rgba(0, 246, 255, 0.06); }
+.he-guide-rx { top: 0; bottom: 0; right: 25%; border-right: none; border-color: rgba(0, 246, 255, 0.06); }
+.he-guide-ty { left: 0; right: 0; top: 25%; border-bottom: none; border-color: rgba(0, 246, 255, 0.06); }
+.he-guide-by { left: 0; right: 0; bottom: 25%; border-bottom: none; border-color: rgba(0, 246, 255, 0.06); }
+
+/* Bottom Hint Pill */
+.hud-editor-tip-pill {
+  position: fixed;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(3, 7, 18, 0.85);
+  border: 1px solid rgba(0, 246, 255, 0.3);
+  padding: 4px 14px;
+  border-radius: 20px;
+  font-family: var(--font-display, sans-serif);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--cyan, #00f6ff);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+  z-index: 100010;
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+   EDIT MODE STATE ENFORCEMENT & ELEMENT INTERACTION
+   ========================================================================== */
+body.hud-edit-mode #mobile-touch-hud {
+  display: block !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  z-index: 100005 !important;
+}
+
+body.hud-edit-mode #mobile-touch-hud .touch-action-btn,
+body.hud-edit-mode #mobile-touch-hud #joystick-base,
+body.hud-edit-mode #mobile-touch-hud #m-weapon-tray {
+  pointer-events: auto !important;
+  touch-action: none !important;
+  cursor: grab !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+}
+
+body.hud-edit-mode #mobile-touch-hud .touch-action-btn:active,
+body.hud-edit-mode #mobile-touch-hud #joystick-base:active,
+body.hud-edit-mode #mobile-touch-hud #m-weapon-tray:active {
+  cursor: grabbing !important;
+}
+
+/* Ensure hidden buttons like Loot are visible and editable in Edit Mode */
+body.hud-edit-mode #mbtn-pickup {
+  display: flex !important;
+  opacity: 0.9 !important;
+}
+
+/* Selected Element Pulsing Glow Highlight */
+body.hud-edit-mode .hud-element-selected {
+  outline: 3px solid #00f6ff !important;
+  outline-offset: 4px !important;
+  box-shadow: 0 0 24px #00f6ff, 0 0 45px rgba(0, 246, 255, 0.6) !important;
+  animation: hudSelectPulse 1.2s infinite alternate ease-in-out !important;
+  z-index: 100008 !important;
+}
+
+@keyframes hudSelectPulse {
+  0% {
+    outline-color: #00f6ff;
+    box-shadow: 0 0 16px #00f6ff, 0 0 30px rgba(0, 246, 255, 0.4);
+  }
+  100% {
+    outline-color: #ffd700;
+    box-shadow: 0 0 28px #ffd700, 0 0 50px rgba(255, 215, 0, 0.6);
+  }
+}
+
+/* Responsive Toolbar Optimization */
+@media (max-width: 768px) {
+  .hud-editor-toolbar {
+    width: 98vw;
+    padding: 6px 10px;
+    gap: 8px;
+  }
+  .het-left {
+    min-width: 120px;
+  }
+  .het-title {
+    font-size: 11px;
+  }
+  .het-selected-name {
+    max-width: 110px;
+    font-size: 10px;
+  }
+  .het-sliders-cluster {
+    gap: 8px;
+  }
+  .btn-het-action {
+    padding: 5px 8px;
+    font-size: 9px;
+  }
+  .hud-editor-tip-pill {
+    font-size: 9px;
+    padding: 3px 10px;
+  }
+}
+
+

@@ -742,6 +742,14 @@
               <button type="button" id="btn-settings-fs-toggle" class="btn-settings-toggle">EXPAND</button>
             </div>
           </div>
+
+          <div class="settings-group">
+            <label class="settings-label">MOBILE TOUCH CONTROLS</label>
+            <div class="settings-control-row">
+              <span>Customize Button Positions, Scale & Opacity</span>
+              <button type="button" id="btn-settings-custom-hud" class="btn-settings-action-hud">⚙️ CUSTOMIZE BUTTONS / HUD</button>
+            </div>
+          </div>
         </div>
 
         <div class="modal-footer">
@@ -1295,114 +1303,181 @@
         <span id="toast-msg" class="pt-msg">+40 HEALTH RESTORED</span>
       </div>
 
-      <!-- ================= 10. MOBILE TOUCH HUD (PUBG & FREE FIRE STANDARD) ================= -->
-      <div id="mobile-touch-hud" class="mobile-hud hidden">
-        <!-- Floating Left Dynamic Virtual Joystick Base & Thumb -->
-        <div id="joystick-base" class="joystick-base">
-          <div id="joystick-thumb" class="joystick-thumb"></div>
-          <div class="joystick-arrows">
-            <span class="j-arr j-up">▲</span>
-            <span class="j-arr j-down">▼</span>
-            <span class="j-arr j-left">◀</span>
-            <span class="j-arr j-right">▶</span>
-          </div>
-        </div>
-
-        <!-- Upper-Left Claw Fire Button (PUBG Style) -->
-        <button type="button" id="mbtn-fire-left" class="touch-action-btn mbtn-claw-fire" title="Left Fire Button">
-          <span class="mbtn-glyph">🔥</span>
-        </button>
-
-        <!-- Right Hand Ergonomic Combat Action Cluster -->
-        <div class="mobile-actions-cluster">
-          <!-- Primary Large Fire Button (68px) -->
-          <button type="button" id="mbtn-fire" class="touch-action-btn mbtn-primary-fire" title="Fire / Drag Aim">
-            <span class="mbtn-glyph">🔥</span>
-            <span class="mbtn-lbl">FIRE</span>
-          </button>
-
-          <!-- ADS / Scope Button -->
-          <button type="button" id="mbtn-ads" class="touch-action-btn mbtn-ads" title="Aim Down Sights">
-            <span class="mbtn-glyph">🎯</span>
-            <span class="mbtn-lbl">ADS</span>
-          </button>
-
-          <!-- Jump Button -->
-          <button type="button" id="mbtn-jump" class="touch-action-btn mbtn-jump" title="Jump Impulse">
-            <span class="mbtn-glyph">▲</span>
-            <span class="mbtn-lbl">JUMP</span>
-          </button>
-
-          <!-- Dash / Sprint Boost Button -->
-          <button type="button" id="mbtn-dash" class="touch-action-btn mbtn-dash" title="Tactical Dash">
-            <span class="mbtn-glyph">⚡</span>
-            <span class="mbtn-lbl">DASH</span>
-          </button>
-
-          <!-- Reload Button -->
-          <button type="button" id="mbtn-reload" class="touch-action-btn mbtn-reload" title="Reload Ammo">
-            <span class="mbtn-glyph">🔄</span>
-            <span class="mbtn-lbl">RELOAD</span>
-          </button>
-
-          <!-- Quick Heal / Nanite Injector Button -->
-          <button type="button" id="mbtn-medic" class="touch-action-btn mbtn-heal" title="Quick Heal">
-            <span class="mbtn-glyph">🧰</span>
-            <span class="mbtn-lbl">HEAL</span>
-          </button>
-
-          <!-- Loot Proximity Button -->
-          <button type="button" id="mbtn-pickup" class="touch-action-btn mbtn-pickup hidden" title="Pick Up Ground Loot">
-            <span class="mbtn-glyph">🖐️</span>
-            <span class="mbtn-lbl">LOOT</span>
-          </button>
-        </div>
-
-        <!-- Bottom Center 5-Slot Weapon Quick-Switch Tray -->
-        <div id="m-weapon-tray" class="m-weapon-tray">
-          <div class="m-weapon-tab active" data-weapon="ar">
-            <span class="mwt-icon">⚡</span>
-            <span class="mwt-name">AR</span>
-            <span class="mwt-ammo" id="m-ammo-ar">30</span>
-          </div>
-          <div class="m-weapon-tab" data-weapon="shotgun">
-            <span class="mwt-icon">💥</span>
-            <span class="mwt-name">SHOTGUN</span>
-            <span class="mwt-ammo" id="m-ammo-shotgun">6</span>
-          </div>
-          <div class="m-weapon-tab" data-weapon="sniper">
-            <span class="mwt-icon">🎯</span>
-            <span class="mwt-name">SNIPER</span>
-            <span class="mwt-ammo" id="m-ammo-sniper">5</span>
-          </div>
-          <div class="m-weapon-tab" data-weapon="smg">
-            <span class="mwt-icon">⚡</span>
-            <span class="mwt-name">SMG</span>
-            <span class="mwt-ammo" id="m-ammo-smg">35</span>
-          </div>
-          <div class="m-weapon-tab" data-weapon="pistol">
-            <span class="mwt-icon">🔫</span>
-            <span class="mwt-name">PISTOL</span>
-            <span class="mwt-ammo" id="m-ammo-pistol">12</span>
-          </div>
-        </div>
-
-        <!-- Mobile Top-Right Header with Pause / Settings Button -->
-        <button type="button" id="mbtn-pause" class="touch-action-btn mbtn-pause-hud" title="Tactical Pause">
-          <span>⚙️</span>
-        </button>
-      </div>
-
-      <!-- Rotate to Landscape Orientation Notice -->
-      <div id="orientation-overlay" class="orientation-overlay hidden">
-        <div class="orientation-box cyber-glass-card">
-          <div class="rotate-phone-anim">📱 ↷</div>
-          <h3 class="orientation-title">PLEASE ROTATE TO LANDSCAPE</h3>
-          <p class="orientation-sub">Landscape orientation is required for tactical combat & dual-zone touch controls.</p>
-        </div>
-      </div>
-
     </div>
+    </div>
+
+    <!-- ================= 10. MOBILE TOUCH HUD (PUBG & FREE FIRE STANDARD) ================= -->
+    <div id="mobile-touch-hud" class="mobile-hud hidden">
+      <!-- Floating Left Dynamic Virtual Joystick Base & Thumb -->
+      <div id="joystick-base" class="joystick-base">
+        <div id="joystick-thumb" class="joystick-thumb"></div>
+        <div class="joystick-arrows">
+          <span class="j-arr j-up">▲</span>
+          <span class="j-arr j-down">▼</span>
+          <span class="j-arr j-left">◀</span>
+          <span class="j-arr j-right">▶</span>
+        </div>
+      </div>
+
+      <!-- Upper-Left Claw Fire Button (PUBG Style) -->
+      <button type="button" id="mbtn-fire-left" class="touch-action-btn mbtn-claw-fire" title="Left Fire Button">
+        <span class="mbtn-glyph">🔥</span>
+      </button>
+
+      <!-- Right Hand Ergonomic Combat Action Cluster -->
+      <div class="mobile-actions-cluster">
+        <!-- Primary Large Fire Button (68px) -->
+        <button type="button" id="mbtn-fire" class="touch-action-btn mbtn-primary-fire" title="Fire / Drag Aim">
+          <span class="mbtn-glyph">🔥</span>
+          <span class="mbtn-lbl">FIRE</span>
+        </button>
+
+        <!-- ADS / Scope Button -->
+        <button type="button" id="mbtn-ads" class="touch-action-btn mbtn-ads" title="Aim Down Sights">
+          <span class="mbtn-glyph">🎯</span>
+          <span class="mbtn-lbl">ADS</span>
+        </button>
+
+        <!-- Jump Button -->
+        <button type="button" id="mbtn-jump" class="touch-action-btn mbtn-jump" title="Jump Impulse">
+          <span class="mbtn-glyph">▲</span>
+          <span class="mbtn-lbl">JUMP</span>
+        </button>
+
+        <!-- Dash / Sprint Boost Button -->
+        <button type="button" id="mbtn-dash" class="touch-action-btn mbtn-dash" title="Tactical Dash">
+          <span class="mbtn-glyph">⚡</span>
+          <span class="mbtn-lbl">DASH</span>
+        </button>
+
+        <!-- Reload Button -->
+        <button type="button" id="mbtn-reload" class="touch-action-btn mbtn-reload" title="Reload Ammo">
+          <span class="mbtn-glyph">🔄</span>
+          <span class="mbtn-lbl">RELOAD</span>
+        </button>
+
+        <!-- Quick Heal / Nanite Injector Button -->
+        <button type="button" id="mbtn-medic" class="touch-action-btn mbtn-heal" title="Quick Heal">
+          <span class="mbtn-glyph">🧰</span>
+          <span class="mbtn-lbl">HEAL</span>
+        </button>
+
+        <!-- Loot Proximity Button -->
+        <button type="button" id="mbtn-pickup" class="touch-action-btn mbtn-pickup hidden" title="Pick Up Ground Loot">
+          <span class="mbtn-glyph">🖐️</span>
+          <span class="mbtn-lbl">LOOT</span>
+        </button>
+      </div>
+
+      <!-- Bottom Center 5-Slot Weapon Quick-Switch Tray -->
+      <div id="m-weapon-tray" class="m-weapon-tray">
+        <div class="m-weapon-tab active" data-weapon="ar">
+          <span class="mwt-icon">⚡</span>
+          <span class="mwt-name">AR</span>
+          <span class="mwt-ammo" id="m-ammo-ar">30</span>
+        </div>
+        <div class="m-weapon-tab" data-weapon="shotgun">
+          <span class="mwt-icon">💥</span>
+          <span class="mwt-name">SHOTGUN</span>
+          <span class="mwt-ammo" id="m-ammo-shotgun">6</span>
+        </div>
+        <div class="m-weapon-tab" data-weapon="sniper">
+          <span class="mwt-icon">🎯</span>
+          <span class="mwt-name">SNIPER</span>
+          <span class="mwt-ammo" id="m-ammo-sniper">5</span>
+        </div>
+        <div class="m-weapon-tab" data-weapon="smg">
+          <span class="mwt-icon">⚡</span>
+          <span class="mwt-name">SMG</span>
+          <span class="mwt-ammo" id="m-ammo-smg">35</span>
+        </div>
+        <div class="m-weapon-tab" data-weapon="pistol">
+          <span class="mwt-icon">🔫</span>
+          <span class="mwt-name">PISTOL</span>
+          <span class="mwt-ammo" id="m-ammo-pistol">12</span>
+        </div>
+      </div>
+
+      <!-- Mobile Top-Right Header with Pause / Settings Button -->
+      <button type="button" id="mbtn-pause" class="touch-action-btn mbtn-pause-hud" title="Tactical Pause">
+        <span>⚙️</span>
+      </button>
+    </div>
+
+    <!-- Rotate to Landscape Orientation Notice -->
+    <div id="orientation-overlay" class="orientation-overlay hidden">
+      <div class="orientation-box cyber-glass-card">
+        <div class="rotate-phone-anim">📱 ↷</div>
+        <h3 class="orientation-title">PLEASE ROTATE TO LANDSCAPE</h3>
+        <p class="orientation-sub">Landscape orientation is required for tactical combat & dual-zone touch controls.</p>
+      </div>
+    </div>
+
+    <!-- ================= 10A. MOBILE HUD CUSTOMIZER EDIT MODE ================= -->
+    <div id="hud-customizer-overlay" class="hud-customizer-overlay hidden">
+      <!-- Top Floating Control Toolbar -->
+      <div class="hud-editor-toolbar cyber-glass-card">
+        <div class="het-left">
+          <div class="het-badge-wrap">
+            <span class="het-icon">⚙️</span>
+            <span class="het-title">HUD CUSTOMIZER</span>
+          </div>
+          <div class="het-target-wrap">
+            <span class="het-target-lbl">EDITING:</span>
+            <span id="het-selected-name" class="het-selected-name">PRIMARY FIRE BUTTON</span>
+          </div>
+        </div>
+
+        <div class="het-sliders-cluster">
+          <!-- Button Scale / Size Slider (50% to 150%) -->
+          <div class="het-slider-item">
+            <div class="het-slider-label-row">
+              <span class="het-sl-title">BUTTON SIZE</span>
+              <span id="het-scale-val" class="het-sl-val">100%</span>
+            </div>
+            <input type="range" id="het-scale-slider" min="50" max="150" value="100" class="cyber-slider het-slider">
+          </div>
+
+          <!-- Button Transparency / Opacity Slider (10% to 100%) -->
+          <div class="het-slider-item">
+            <div class="het-slider-label-row">
+              <span class="het-sl-title">TRANSPARENCY</span>
+              <span id="het-opacity-val" class="het-sl-val">90%</span>
+            </div>
+            <input type="range" id="het-opacity-slider" min="10" max="100" value="90" class="cyber-slider het-slider">
+          </div>
+        </div>
+
+        <div class="het-actions-cluster">
+          <button type="button" id="btn-hud-reset" class="btn-het-action btn-het-reset" title="Restore factory default PUBG/Free Fire layout">
+            <span class="btn-het-icon">↺</span>
+            <span>RESET TO DEFAULT</span>
+          </button>
+          <button type="button" id="btn-hud-cancel" class="btn-het-action btn-het-cancel" title="Discard unsaved changes">
+            <span class="btn-het-icon">✕</span>
+            <span>CANCEL</span>
+          </button>
+          <button type="button" id="btn-hud-save" class="btn-het-action btn-het-save" title="Save custom layout to device storage">
+            <span class="btn-het-icon">💾</span>
+            <span>SAVE & EXIT</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Cyber Tactical Alignment Guides -->
+      <div class="hud-editor-grid">
+        <div class="he-guide he-guide-cx"></div>
+        <div class="he-guide he-guide-cy"></div>
+        <div class="he-guide he-guide-lx"></div>
+        <div class="he-guide he-guide-rx"></div>
+        <div class="he-guide he-guide-ty"></div>
+        <div class="he-guide he-guide-by"></div>
+      </div>
+
+      <!-- Bottom Hint Pill -->
+      <div class="hud-editor-tip-pill">
+        <span>👆 Tap any button to select • Drag anywhere on screen to reposition • Adjust Size & Opacity above</span>
+      </div>
     </div>
 
     <!-- ================= 10B. IN-GAME PAUSE / ESCAPE / EXIT MODAL ================= -->
@@ -1442,6 +1517,14 @@
               <div class="settings-slider-row">
                 <input type="range" id="pause-sensitivity-slider" min="1" max="10" value="5" class="cyber-slider">
                 <span id="pause-sensitivity-val" class="slider-val">5.0</span>
+              </div>
+            </div>
+
+            <div class="settings-group">
+              <label class="settings-label">MOBILE TOUCH CONTROLS</label>
+              <div class="settings-control-row">
+                <span>Customize Button Layout, Scale & Opacity</span>
+                <button type="button" id="btn-pause-custom-hud" class="btn-settings-action-hud">⚙️ CUSTOMIZE BUTTONS / HUD</button>
               </div>
             </div>
 
