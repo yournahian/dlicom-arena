@@ -1722,29 +1722,18 @@ class CyberWarfareClient {
       this.isPointerLocked = false;
       const isWinner = data.winner && data.winner.id === this.selfId;
 
-      if (isWinner) {
-        const victoryScreen = document.getElementById('victoryScreen') || document.getElementById('match-end-modal');
-        if (victoryScreen) {
-          victoryScreen.style.display = 'flex';
-          victoryScreen.classList.remove('hidden');
-        }
-        const banner = document.getElementById('end-victory-banner');
-        if (banner) {
-          banner.textContent = 'VICTORY ROYALE #1';
-          banner.classList.add('victory-royale-banner');
-        }
-        const sub = document.getElementById('end-sub-banner');
-        if (sub) sub.textContent = 'CHAMPION OF CYBER ARENA';
-
-        document.getElementById('end-stat-kills').textContent = `${this.player.kills || 0}`;
-        document.getElementById('end-stat-damage').textContent = `${this.player.damageDealt || 0}`;
-        const dur = data.stats?.duration || Math.round((Date.now() - (this.matchStartTime || Date.now())) / 1000);
-        const m = Math.floor(dur / 60);
-        const s = dur % 60;
-        document.getElementById('end-stat-time').textContent = `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-        this.launchVictoryConfetti();
-        sounds.playVictoryRoyale();
-      }
+      this.handleMatchEnded({
+        mode: 'br',
+        winner: data.winner,
+        isLocalWinner: isWinner,
+        stats: {
+          kills: this.player.kills || 0,
+          damageDealt: this.player.damageDealt || 0,
+          timeSurvived: data.stats?.duration || Math.round((Date.now() - (this.matchStartTime || Date.now())) / 1000),
+          score: (this.player.kills || 0) * 100
+        },
+        leaderboard: data.leaderboard || []
+      });
     });
 
     this.socket.on('groundLootRemoved', (data) => {
@@ -4775,14 +4764,35 @@ class CyberWarfareClient {
     this.keys = {};
     this.mouseButtons = { left: false, right: false };
     this.resetTouchState();
-    document.getElementById('in-game-pause-modal')?.classList.remove('hidden');
+
+    const pauseMenu = document.getElementById('pauseMenu');
+    if (pauseMenu) {
+      pauseMenu.style.display = 'flex';
+      pauseMenu.classList.remove('hidden');
+    }
+    const pauseModal = document.getElementById('in-game-pause-modal');
+    if (pauseModal) {
+      pauseModal.style.display = 'flex';
+      pauseModal.classList.remove('hidden');
+    }
+
     document.getElementById('hud-pointer-lock-prompt')?.classList.add('hidden');
     if (document.exitPointerLock) document.exitPointerLock();
+    this.isPointerLocked = false;
   }
 
   resumeMatch() {
     this.isPaused = false;
-    document.getElementById('in-game-pause-modal')?.classList.add('hidden');
+    const pauseModal = document.getElementById('in-game-pause-modal');
+    if (pauseModal) {
+      pauseModal.classList.add('hidden');
+      pauseModal.style.display = 'none';
+    }
+    const pauseMenu = document.getElementById('pauseMenu');
+    if (pauseMenu) {
+      pauseMenu.classList.add('hidden');
+      pauseMenu.style.display = 'none';
+    }
     if (this.inMatch && !this.isTouch) {
       try {
         this.canvas.requestPointerLock?.();
@@ -4816,15 +4826,32 @@ class CyberWarfareClient {
     document.getElementById('staging-screen')?.classList.add('hidden');
 
     const victoryScreen = document.getElementById('victoryScreen');
-    if (victoryScreen) victoryScreen.style.display = 'none';
-    document.getElementById('match-end-modal')?.classList.add('hidden');
+    if (victoryScreen) {
+      victoryScreen.style.display = 'none';
+      victoryScreen.classList.add('hidden');
+    }
+    const matchEndModal = document.getElementById('match-end-modal');
+    if (matchEndModal) {
+      matchEndModal.style.display = 'none';
+      matchEndModal.classList.add('hidden');
+    }
 
     const deathScreen = document.getElementById('deathScreen');
-    if (deathScreen) deathScreen.style.display = 'none';
+    if (deathScreen) {
+      deathScreen.style.display = 'none';
+      deathScreen.classList.add('hidden');
+    }
 
     const pauseMenu = document.getElementById('pauseMenu');
-    if (pauseMenu) pauseMenu.style.display = 'none';
-    document.getElementById('in-game-pause-modal')?.classList.add('hidden');
+    if (pauseMenu) {
+      pauseMenu.style.display = 'none';
+      pauseMenu.classList.add('hidden');
+    }
+    const pauseModal = document.getElementById('in-game-pause-modal');
+    if (pauseModal) {
+      pauseModal.style.display = 'none';
+      pauseModal.classList.add('hidden');
+    }
 
     document.getElementById('spectator-overlay')?.classList.add('hidden');
     document.getElementById('hud-pointer-lock-prompt')?.classList.add('hidden');
@@ -5004,7 +5031,7 @@ class CyberWarfareClient {
     // Desktop Pointer Lock - Click anywhere during match to request pointer lock
     window.addEventListener('click', (e) => {
       if (this.inMatch && !this.isPointerLocked && !this.isPaused) {
-        if (e.target.closest('.modal-overlay') || e.target.closest('#staging-screen') || e.target.closest('#match-end-modal') || e.target.closest('#in-game-pause-modal')) return;
+        if (e.target.closest('.modal-overlay') || e.target.closest('#staging-screen') || e.target.closest('#match-end-modal') || e.target.closest('#in-game-pause-modal') || e.target.closest('#deathScreen') || e.target.closest('.btn-prompt-action')) return;
         sounds.init();
         try {
           this.canvas.requestPointerLock?.();
@@ -5015,8 +5042,15 @@ class CyberWarfareClient {
     document.addEventListener('pointerlockchange', () => {
       this.isPointerLocked = (document.pointerLockElement === this.canvas);
       const lockPrompt = document.getElementById('hud-pointer-lock-prompt');
+      const pauseModal = document.getElementById('in-game-pause-modal');
+      const isPauseVisible = pauseModal && !pauseModal.classList.contains('hidden') && pauseModal.style.display !== 'none';
+      const endModal = document.getElementById('match-end-modal');
+      const isEndVisible = endModal && !endModal.classList.contains('hidden') && endModal.style.display !== 'none';
+      const deathModal = document.getElementById('deathScreen');
+      const isDeathVisible = deathModal && !deathModal.classList.contains('hidden') && deathModal.style.display !== 'none';
+
       if (lockPrompt) {
-        if (this.inMatch && !this.isPointerLocked && !this.isTouch && !this.isPaused) {
+        if (this.inMatch && !this.isPointerLocked && !this.isTouch && !this.isPaused && !isPauseVisible && !isEndVisible && !isDeathVisible) {
           lockPrompt.classList.remove('hidden');
         } else {
           lockPrompt.classList.add('hidden');
@@ -5024,7 +5058,25 @@ class CyberWarfareClient {
       }
     });
 
+    // Prompt action buttons: Tactical Pause and Return to Lobby
+    document.getElementById('btn-prompt-open-pause')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      sounds.init();
+      sounds.playClick();
+      this.openPauseMenu();
+    });
+
+    document.getElementById('btn-prompt-return-lobby')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      sounds.init();
+      sounds.playClick();
+      this.returnToLobby();
+    });
+
     document.getElementById('hud-pointer-lock-prompt')?.addEventListener('click', (e) => {
+      if (e.target.closest('.btn-prompt-action')) return;
       e.stopPropagation();
       sounds.init();
       try { this.canvas.requestPointerLock?.(); } catch (err) {}
@@ -6276,15 +6328,47 @@ class CyberWarfareClient {
 
   handleMatchEnded(data) {
     this.inMatch = false;
+    this.isPaused = false;
+    if (document.exitPointerLock) document.exitPointerLock();
+    this.isPointerLocked = false;
     this.player.isADS = false;
     this.camera.fov = 75;
     this.camera.rotation.order = 'XYZ';
     this.camera.updateProjectionMatrix();
+
     document.body.classList.remove('player-eliminated');
     document.getElementById('cyber-sniper-scope')?.classList.add('hidden');
     document.getElementById('crosshair')?.classList.remove('hidden');
     document.getElementById('hud-overlay')?.classList.add('hidden');
-    document.getElementById('match-end-modal')?.classList.remove('hidden');
+    document.getElementById('hud-pointer-lock-prompt')?.classList.add('hidden');
+
+    const inGameHUD = document.getElementById('inGameHUD');
+    if (inGameHUD) inGameHUD.style.display = 'none';
+
+    const deathScreen = document.getElementById('deathScreen');
+    if (deathScreen) {
+      deathScreen.style.display = 'none';
+      deathScreen.classList.add('hidden');
+    }
+
+    const spectatorOverlay = document.getElementById('spectator-overlay');
+    if (spectatorOverlay) spectatorOverlay.classList.add('hidden');
+
+    const pauseMenu = document.getElementById('pauseMenu');
+    if (pauseMenu) pauseMenu.style.display = 'none';
+    const pauseModal = document.getElementById('in-game-pause-modal');
+    if (pauseModal) pauseModal.classList.add('hidden');
+
+    const victoryScreen = document.getElementById('victoryScreen');
+    if (victoryScreen) {
+      victoryScreen.style.display = 'flex';
+      victoryScreen.classList.remove('hidden');
+    }
+    const matchEndModal = document.getElementById('match-end-modal');
+    if (matchEndModal) {
+      matchEndModal.style.display = 'flex';
+      matchEndModal.classList.remove('hidden');
+    }
 
     const banner = document.getElementById('end-victory-banner');
     const sub = document.getElementById('end-sub-banner');

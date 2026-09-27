@@ -785,10 +785,17 @@ class GameRoom {
         const weaponKeys = ['ar', 'shotgun', 'sniper', 'smg', 'pistol'];
         const weapon = weaponKeys[i % weaponKeys.length];
 
+        const roles = ['flanker_left', 'aggressor_mid', 'flanker_right', 'roamer_support'];
+        const role = roles[i % roles.length];
+        const strafeDir = (i % 2 === 0 ? 1 : -1);
+
         this.bots.set(bId, {
           id: bId,
           name: BOT_NAMES[i % BOT_NAMES.length],
           team: bTeam,
+          role,
+          strafeDir,
+          strafeSwitchTime: Date.now() + 1500 + Math.random() * 2000,
           isBot: true,
           x: sp.x,
           y: sp.y,
@@ -811,7 +818,7 @@ class GameRoom {
           kills: 0,
           deaths: 0,
           targetId: null,
-          nextDecisionTime: Date.now() + Math.random() * 800,
+          nextDecisionTime: Date.now() + Math.random() * 600,
           nextShootTime: Date.now() + 1000 + Math.random() * 800,
           moveDirection: { x: (Math.random() - 0.5) * 2, z: (Math.random() - 0.5) * 2 },
           isShooting: false
@@ -1221,16 +1228,23 @@ class GameRoom {
   updateBots(dt, now) {
     const allCombatants = [...this.players.values(), ...this.bots.values()];
 
+    // Track how many bots are currently targeting each combatant to distribute targets
+    const targetCounts = new Map();
+    for (const [, b] of this.bots) {
+      if (b.isAlive && b.targetId) {
+        targetCounts.set(b.targetId, (targetCounts.get(b.targetId) || 0) + 1);
+      }
+    }
+
     for (const [, bot] of this.bots) {
       if (!bot.isAlive) continue;
 
-      // 1. AI Decision Making: Pick target
+      // 1. AI Decision Making: Pick target with distribution scoring & roles
       if (now >= bot.nextDecisionTime) {
-        bot.nextDecisionTime = now + 600 + Math.random() * 800;
+        bot.nextDecisionTime = now + 450 + Math.random() * 550;
 
-        // Find closest enemy combatant
-        let closestTarget = null;
-        let minDist = 999;
+        let bestTarget = null;
+        let bestScore = 99999;
 
         for (const other of allCombatants) {
           if (other.id === bot.id || !other.isAlive) continue;
@@ -1239,13 +1253,26 @@ class GameRoom {
           const dx = other.x - bot.x;
           const dz = other.z - bot.z;
           const dist = Math.sqrt(dx * dx + dz * dz);
-          if (dist < minDist) {
-            minDist = dist;
-            closestTarget = other;
+
+          // Base score is distance; penalize heavily if multiple teammates already targeting this enemy
+          const swarmedCount = targetCounts.get(other.id) || 0;
+          let score = dist + swarmedCount * 14.0;
+
+          // Priority bonus for weak enemies
+          if (other.health < 40) score -= 8.0;
+
+          // Priority bonus if direct line-of-sight exists
+          if (checkLineOfSight(bot.x, bot.z, other.x, other.z, this.mapId)) {
+            score -= 10.0;
+          }
+
+          if (score < bestScore) {
+            bestScore = score;
+            bestTarget = other;
           }
         }
 
-        bot.targetId = closestTarget ? closestTarget.id : null;
+        bot.targetId = bestTarget ? bestTarget.id : null;
 
         // If in BR, prioritize zone awareness & ground looting
         if (this.mode === 'br') {
@@ -1255,12 +1282,10 @@ class GameRoom {
           const distFromCenter = Math.sqrt(dxCenter * dxCenter + dzCenter * dzCenter);
 
           if (distFromCenter > sz.currentRadius * 0.85) {
-            // Zone Awareness: override combat pathfinding and force running directly toward safe zone center
             const angle = Math.atan2(dxCenter, dzCenter);
             bot.moveDirection = { x: Math.sin(angle), z: Math.cos(angle) };
             bot.targetId = null;
           } else if (bot.weapon === 'pistol' && this.groundLoot.size > 0) {
-            // Looting Behavior: at match start, bots navigate toward nearest ground loot
             let closestLoot = null;
             let minLootDist = 999;
             for (const [, loot] of this.groundLoot) {
@@ -1287,6 +1312,12 @@ class GameRoom {
         }
       }
 
+      // Dynamic strafe direction switching
+      if (!bot.strafeSwitchTime || now >= bot.strafeSwitchTime) {
+        bot.strafeDir = (bot.strafeDir === 1 ? -1 : 1);
+        bot.strafeSwitchTime = now + 1200 + Math.random() * 2200;
+      }
+
       // 2. Movement & Aiming toward target
       let target = null;
       if (bot.targetId) {
@@ -1296,6 +1327,24 @@ class GameRoom {
 
       const speed = (now < bot.speedBoostUntil) ? 14.0 : 9.5;
 
+      // Calculate teammate flocking separation force to NEVER bunch up
+      let sepX = 0;
+      let sepZ = 0;
+      for (const other of allCombatants) {
+        if (other.id === bot.id || !other.isAlive) continue;
+        if (this.mode === 'tdm' && other.team !== bot.team) continue;
+
+        const odx = bot.x - other.x;
+        const odz = bot.z - other.z;
+        const distSq = odx * odx + odz * odz;
+        if (distSq > 0.0001 && distSq < 25.0) { // within 5m
+          const d = Math.sqrt(distSq);
+          const push = (5.0 - d) / 5.0; // 0 to 1
+          sepX += (odx / d) * push * 6.5;
+          sepZ += (odz / d) * push * 6.5;
+        }
+      }
+
       if (target) {
         const dx = target.x - bot.x;
         const dz = target.z - bot.z;
@@ -1304,52 +1353,75 @@ class GameRoom {
         bot.yaw = Math.atan2(dx, dz);
         bot.pitch = -Math.atan2(dy, Math.max(0.1, dist));
 
-        // Strafe & advance/retreat with axis-separated obstacle collision & avoidance
+        // Tactical Movement: Strafe, Lane offset, advance or retreat
         let moveX = 0;
         let moveZ = 0;
-        if (dist > 18) {
+
+        // Tactical retreat if low health
+        const isLowHealth = bot.health < 35;
+
+        if (isLowHealth || dist < 8) {
+          // Back up while keeping aim on target
+          moveX = -Math.sin(bot.yaw) * (speed * 0.75) * dt;
+          moveZ = -Math.cos(bot.yaw) * (speed * 0.75) * dt;
+        } else if (dist > 22) {
+          // Advance toward target
           moveX = Math.sin(bot.yaw) * speed * dt;
           moveZ = Math.cos(bot.yaw) * speed * dt;
-        } else if (dist < 7) {
-          moveX = -Math.sin(bot.yaw) * (speed * 0.7) * dt;
-          moveZ = -Math.cos(bot.yaw) * (speed * 0.7) * dt;
         } else {
-          // Circle strafe
-          const strafeAngle = bot.yaw + Math.PI / 2;
-          moveX = Math.sin(strafeAngle) * (speed * 0.6) * dt;
-          moveZ = Math.cos(strafeAngle) * (speed * 0.6) * dt;
+          // Mid-range combat: Circle strafe with dynamic direction
+          const strafeAngle = bot.yaw + (Math.PI / 2) * (bot.strafeDir || 1);
+          moveX = Math.sin(strafeAngle) * (speed * 0.7) * dt;
+          moveZ = Math.cos(strafeAngle) * (speed * 0.7) * dt;
+        }
+
+        // Apply lane bias for TDM tactical dispersion
+        if (this.mode === 'tdm') {
+          if (bot.role === 'flanker_left' && bot.x > -14) {
+            moveX -= 3.5 * dt;
+          } else if (bot.role === 'flanker_right' && bot.x < 14) {
+            moveX += 3.5 * dt;
+          }
+        }
+
+        // Apply teammate separation force
+        moveX += sepX * dt;
+        moveZ += sepZ * dt;
+
+        // Tactical Combat Jump Evasion
+        if (bot.isGrounded && dist < 24 && Math.random() < 0.035) {
+          bot.vy = 8.5;
+          bot.isGrounded = false;
         }
 
         const nextX = bot.x + moveX;
         if (!checkBotObstacleCollision(nextX, bot.z, 0.6, this.mapId) && Math.abs(nextX) <= 37.4) {
           bot.x = nextX;
         } else {
-          // Step around obstacle along perpendicular axis
-          bot.z += (Math.random() < 0.5 ? 1 : -1) * speed * 0.5 * dt;
+          bot.z += (bot.strafeDir || 1) * speed * 0.5 * dt;
         }
 
         const nextZ = bot.z + moveZ;
         if (!checkBotObstacleCollision(bot.x, nextZ, 0.6, this.mapId) && Math.abs(nextZ) <= 37.4) {
           bot.z = nextZ;
         } else {
-          // Step around obstacle along perpendicular axis
-          bot.x += (Math.random() < 0.5 ? 1 : -1) * speed * 0.5 * dt;
+          bot.x += (bot.strafeDir || 1) * speed * 0.5 * dt;
         }
 
         bot.x = Math.max(-37.4, Math.min(37.4, bot.x));
         bot.z = Math.max(-37.4, Math.min(37.4, bot.z));
 
         // 3. Bot Shooting (strictly requires direct line of sight)
-        if (now >= bot.nextShootTime && dist < 32) {
+        if (now >= bot.nextShootTime && dist < 34) {
           const w = WEAPONS[bot.weapon] || WEAPONS.ar;
-          bot.nextShootTime = now + (w.fireRateMs * (1.2 + Math.random() * 0.8));
+          bot.nextShootTime = now + (w.fireRateMs * (1.1 + Math.random() * 0.7));
 
           // Occlusion Raycast Check: Bots CANNOT shoot through solid walls or containers
           const hasLOS = checkLineOfSight(bot.x, bot.z, target.x, target.z, this.mapId);
 
           if (hasLOS) {
             // Accuracy chance based on distance
-            const hitChance = Math.max(0.3, 0.75 - dist * 0.015);
+            const hitChance = Math.max(0.35, 0.78 - dist * 0.014);
             const isHit = Math.random() < hitChance;
 
             if (isHit && target.isAlive) {
@@ -1369,9 +1441,15 @@ class GameRoom {
           }
         }
       } else {
-        // Idle wander with 90-degree deflection on obstacle collision
-        const candX = bot.x + bot.moveDirection.x * speed * 0.5 * dt;
-        const candZ = bot.z + bot.moveDirection.z * speed * 0.5 * dt;
+        // Idle wander / lane patrol with separation force applied
+        let candX = bot.x + (bot.moveDirection.x * speed * 0.5 + sepX) * dt;
+        let candZ = bot.z + (bot.moveDirection.z * speed * 0.5 + sepZ) * dt;
+
+        if (this.mode === 'tdm') {
+          if (bot.role === 'flanker_left' && bot.x > -14) candX -= 3.0 * dt;
+          else if (bot.role === 'flanker_right' && bot.x < 14) candX += 3.0 * dt;
+        }
+
         if (checkBotObstacleCollision(candX, candZ, 0.6, this.mapId) || Math.abs(candX) > 36 || Math.abs(candZ) > 36) {
           const oldDirX = bot.moveDirection.x;
           bot.moveDirection.x = -bot.moveDirection.z;
@@ -1928,13 +2006,16 @@ class GameRoom {
 
     const matchDuration = Math.round((Date.now() - (this.matchStartTime || Date.now())) / 1000);
 
+    const leaderboard = this.generateLeaderboard();
+
     // Broadcast brGameOver as requested
     io.to(this.id).emit('brGameOver', {
       winner: winner ? { id: winner.id, name: winner.name, isBot: !!winner.isBot } : null,
       stats: {
         totalCombatants: 10,
         duration: matchDuration
-      }
+      },
+      leaderboard
     });
 
     for (const [pId, p] of this.players) {

@@ -3017,6 +3017,46 @@ body.mode-tdm .hud-br-inventory {
   color: var(--cyan);
   box-shadow: 0 0 24px rgba(0, 246, 255, 0.5);
   text-shadow: 0 0 8px rgba(0, 246, 255, 0.8);
+  text-align: center;
+}
+
+.prompt-actions-row {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.btn-prompt-action {
+  padding: 8px 16px;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(0, 246, 255, 0.5);
+  border-radius: 6px;
+  color: #ffffff;
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  pointer-events: auto;
+}
+
+.btn-prompt-action:hover {
+  background: rgba(0, 246, 255, 0.25);
+  border-color: var(--cyan);
+  box-shadow: 0 0 12px rgba(0, 246, 255, 0.5);
+}
+
+.btn-prompt-leave {
+  border-color: rgba(255, 0, 85, 0.5);
+  color: #ffb3c6;
+}
+
+.btn-prompt-leave:hover {
+  background: rgba(255, 0, 85, 0.25);
+  border-color: var(--crimson);
+  box-shadow: 0 0 12px rgba(255, 0, 85, 0.5);
 }
 
 @keyframes promptPulse {
