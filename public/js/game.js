@@ -974,6 +974,10 @@ class CyberWarfareClient {
     this.lobbyPedestalRings = [];
     this.lobbyPedestalBeam = null;
 
+    // 3D GLTF High-Fidelity Character Models (Red and Blue Teams)
+    this.characterTemplates = { blue: null, red: null };
+    this.characterModelsLoaded = false;
+
     // Entities Map (id -> { mesh, targetPos, currentPos, targetYaw, health, team, isBot })
     this.remoteEntities = new Map();
 
@@ -1127,8 +1131,68 @@ class CyberWarfareClient {
     }
   }
 
+  preloadCharacterModels() {
+    this.characterTemplates = { blue: null, red: null };
+    this.characterModelsLoaded = false;
+
+    if (typeof THREE === 'undefined' || !THREE.GLTFLoader) {
+      console.warn('[Dlicom 3D] THREE.GLTFLoader not available yet');
+      return;
+    }
+
+    const loader = new THREE.GLTFLoader();
+    const blueUrl = '/models/blue%20team%20character%203d%20model.glb';
+    const redUrl = '/models/red%20team%20character%203d%20model.glb';
+
+    let loadedCount = 0;
+    const checkAllLoaded = () => {
+      loadedCount++;
+      if (loadedCount >= 2) {
+        this.characterModelsLoaded = true;
+        console.log('[Dlicom 3D] Both Blue and Red character GLB models loaded successfully!');
+        if (this.lobbyMascot) {
+          this.updateMascotTeamColor(this.lobbyMascot, this.player.team || 'blue');
+        }
+        for (const [, ent] of this.remoteEntities) {
+          if (ent && ent.mesh) {
+            this.updateMascotTeamColor(ent.mesh, ent.team || 'blue');
+          }
+        }
+      }
+    };
+
+    loader.load(blueUrl, (gltf) => {
+      const scene = gltf.scene;
+      scene.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
+      this.characterTemplates.blue = scene;
+      checkAllLoaded();
+    }, undefined, (err) => {
+      console.warn('[Dlicom 3D] Failed to load Blue team GLB model:', err);
+    });
+
+    loader.load(redUrl, (gltf) => {
+      const scene = gltf.scene;
+      scene.traverse((child) => {
+        if (child.isMesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+        }
+      });
+      this.characterTemplates.red = scene;
+      checkAllLoaded();
+    }, undefined, (err) => {
+      console.warn('[Dlicom 3D] Failed to load Red team GLB model:', err);
+    });
+  }
+
   init() {
     this.updateDeviceModeUI();
+    this.preloadCharacterModels();
     this.initNetwork();
     this.initThree();
     this.buildLobbyScene();
@@ -3484,120 +3548,62 @@ class CyberWarfareClient {
   }
 
   // -------------------------------------------------------------
-  // 7. PROCEDURAL 3D VOXEL MASCOT MODEL (FOR OTHER COMBATANTS)
+  // 7. 3D CYBER COMBATANT MODEL (GLTF/GLB + PROCEDURAL FALLBACK)
   // -------------------------------------------------------------
   createMascotMesh(entity) {
     const mascot = new THREE.Group();
 
-    // Team or FFA Color
-    let suitColor = 0x2563eb;
+    // Determine Team and Accent Color
+    let isRed = (entity.team === 'red');
     if (this.gameMode === 'tdm') {
-      suitColor = entity.team === 'red' ? 0xff0055 : 0x00f6ff;
+      isRed = (entity.team === 'red');
     } else {
-      suitColor = entity.isBot ? 0xf59e0b : 0x00f6ff;
+      isRed = (entity.team === 'red') || (entity.isBot && entity.id && entity.id.charCodeAt(0) % 2 === 1);
+    }
+    const teamKey = isRed ? 'red' : 'blue';
+    const suitColor = isRed ? 0xff0055 : 0x00f6ff;
+
+    // 1. Model Container for High-Fidelity 3D GLB Character
+    const modelContainer = new THREE.Group();
+    mascot.add(modelContainer);
+    mascot.userData.modelContainer = modelContainer;
+
+    const template = this.characterTemplates ? this.characterTemplates[teamKey] : null;
+    if (template) {
+      const glbModel = template.clone(true);
+      glbModel.scale.set(2.3, 2.3, 2.3);
+      modelContainer.add(glbModel);
+      mascot.userData.glbModel = glbModel;
+    } else {
+      // Procedural fallback until GLB finishes loading
+      const suitMat = new THREE.MeshStandardMaterial({ color: suitColor, roughness: 0.4, metalness: 0.3 });
+      const darkMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.6 });
+
+      const torso = new THREE.Mesh(new THREE.BoxGeometry(0.85, 1.0, 0.5), suitMat);
+      torso.position.y = 1.0;
+      torso.castShadow = true;
+      modelContainer.add(torso);
+
+      const headGroup = new THREE.Group();
+      headGroup.position.set(0, 1.8, 0);
+      const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.55, 16, 16), suitMat);
+      headGroup.add(helmet);
+      modelContainer.add(headGroup);
+
+      const legGeo = new THREE.BoxGeometry(0.28, 0.8, 0.28);
+      const legL = new THREE.Mesh(legGeo, darkMat);
+      legL.position.set(-0.25, 0.4, 0);
+      modelContainer.add(legL);
+      const legR = new THREE.Mesh(legGeo, darkMat);
+      legR.position.set(0.25, 0.4, 0);
+      modelContainer.add(legR);
+
+      mascot.userData.suitMat = suitMat;
     }
 
-    const suitMat = new THREE.MeshStandardMaterial({ color: suitColor, roughness: 0.4, metalness: 0.3 });
-    const darkMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.6 });
-
-    // 1. Torso (bodyMesh)
-    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.85, 1.0, 0.5), suitMat);
-    torso.position.y = 1.0;
-    torso.castShadow = true;
-    mascot.add(torso);
-
-    // 2. Head Group (Helmet + Glass Visor + Cute '> <' Eyes)
-    const headGroup = new THREE.Group();
-    headGroup.position.set(0, 1.8, 0);
-
-    const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.55, 16, 16), suitMat);
-    headGroup.add(helmet);
-
-    const eyeColor = (entity.team === 'red') ? 0xff0055 : 0x00f6ff;
-    const visorMat = new THREE.MeshStandardMaterial({
-      color: eyeColor,
-      emissive: eyeColor,
-      emissiveIntensity: 0.6,
-      roughness: 0.1,
-      metalness: 0.9
-    });
-    const visor = new THREE.Mesh(new THREE.SphereGeometry(0.42, 16, 16, 0, Math.PI), visorMat);
-    visor.position.set(0, 0, 0.2);
-    visor.rotation.y = -Math.PI / 2;
-    headGroup.add(visor);
-
-    // Glowing Neon '> <' Cyber Visor Eyes
-    const eyeMat = new THREE.MeshBasicMaterial({ color: eyeColor });
-    // Left eye '>'
-    const eyeL1 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.02, 0.02), eyeMat);
-    eyeL1.position.set(-0.14, 0.025, 0.42);
-    eyeL1.rotation.z = Math.PI / 4;
-    headGroup.add(eyeL1);
-
-    const eyeL2 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.02, 0.02), eyeMat);
-    eyeL2.position.set(-0.14, -0.025, 0.42);
-    eyeL2.rotation.z = -Math.PI / 4;
-    headGroup.add(eyeL2);
-
-    // Right eye '<'
-    const eyeR1 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.02, 0.02), eyeMat);
-    eyeR1.position.set(0.14, 0.025, 0.42);
-    eyeR1.rotation.z = -Math.PI / 4;
-    headGroup.add(eyeR1);
-
-    const eyeR2 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.02, 0.02), eyeMat);
-    eyeR2.position.set(0.14, -0.025, 0.42);
-    eyeR2.rotation.z = Math.PI / 4;
-    headGroup.add(eyeR2);
-
-    mascot.userData.eyes = { eyeL1, eyeL2, eyeR1, eyeR2 };
-    mascot.add(headGroup);
-
-    // 3. Legs (Hip-Pivoted at y = 0.8)
-    const legGeo = new THREE.BoxGeometry(0.28, 0.8, 0.28);
-
-    const legGroupL = new THREE.Group();
-    legGroupL.position.set(-0.25, 0.8, 0);
-    const legMeshL = new THREE.Mesh(legGeo, darkMat);
-    legMeshL.position.set(0, -0.4, 0);
-    legGroupL.add(legMeshL);
-    mascot.add(legGroupL);
-
-    const legGroupR = new THREE.Group();
-    legGroupR.position.set(0.25, 0.8, 0);
-    const legMeshR = new THREE.Mesh(legGeo, darkMat);
-    legMeshR.position.set(0, -0.4, 0);
-    legGroupR.add(legMeshR);
-    mascot.add(legGroupR);
-
-    // 4. Arms with Cyber Voxel Gloves (Shoulder-Pivoted at y = 1.35)
-    const armGroupL = new THREE.Group();
-    armGroupL.position.set(-0.48, 1.35, 0);
-    const armMeshL = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.76, 0.22), suitMat);
-    armMeshL.position.set(0, -0.38, 0);
-    armGroupL.add(armMeshL);
-    const handMeshL = new THREE.Mesh(new THREE.BoxGeometry(0.23, 0.16, 0.23), darkMat);
-    handMeshL.position.set(0, -0.68, 0);
-    armGroupL.add(handMeshL);
-    // Two-handed front support stance
-    armGroupL.rotation.set(-0.88, 0.28, 0.65);
-    mascot.add(armGroupL);
-
-    const armGroupR = new THREE.Group();
-    armGroupR.position.set(0.48, 1.35, 0);
-    const armMeshR = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.72, 0.22), suitMat);
-    armMeshR.position.set(0, -0.36, 0);
-    armGroupR.add(armMeshR);
-    const handMeshR = new THREE.Mesh(new THREE.BoxGeometry(0.23, 0.16, 0.23), darkMat);
-    handMeshR.position.set(0, -0.64, 0);
-    armGroupR.add(handMeshR);
-    // Two-handed rear pistol grip stance
-    armGroupR.rotation.set(-0.65, -0.18, -0.42);
-    mascot.add(armGroupR);
-
-    // 5. Upper Torso & Dynamic Aiming Weapon Pivot (heldWeapon)
+    // 2. Upper Torso & Dynamic Aiming Weapon Pivot (heldWeapon)
     const weaponPivot = new THREE.Group();
-    weaponPivot.position.set(0, 1.10, 0.05);
+    weaponPivot.position.set(0, 1.05, 0.15);
     mascot.add(weaponPivot);
 
     // Authentic Two-Handed Cyber Assault Rifle Model
@@ -3608,34 +3614,34 @@ class CyberWarfareClient {
 
     // Main Receiver
     const rBody = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.14, 0.58), gunMat);
-    rBody.position.set(0.18, 0.0, 0.28);
+    rBody.position.set(0.18, 0.0, 0.22);
     rifleGroup.add(rBody);
 
     // Glowing Neon Accent Stripe
     const rStrip = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.025, 0.50), accentMat);
-    rStrip.position.set(0.18, 0.07, 0.28);
+    rStrip.position.set(0.18, 0.07, 0.22);
     rifleGroup.add(rStrip);
 
-    // Buttstock (resting near shoulder)
+    // Buttstock
     const rStock = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.12, 0.26), darkGunMat);
-    rStock.position.set(0.20, 0.02, 0.0);
+    rStock.position.set(0.20, 0.02, -0.06);
     rifleGroup.add(rStock);
 
-    // Pistol Grip (grasped firmly by right hand)
+    // Pistol Grip
     const rGrip = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.20, 0.09), darkGunMat);
-    rGrip.position.set(0.19, -0.14, 0.20);
+    rGrip.position.set(0.19, -0.14, 0.14);
     rGrip.rotation.x = -0.2;
     rifleGroup.add(rGrip);
 
     // Curved Ammo Magazine
     const rMag = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.22, 0.10), darkGunMat);
-    rMag.position.set(0.18, -0.18, 0.32);
+    rMag.position.set(0.18, -0.18, 0.26);
     rMag.rotation.x = 0.15;
     rifleGroup.add(rMag);
 
-    // Foregrip / Handguard (supported from below by left hand)
+    // Foregrip / Handguard
     const rHandguard = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.10, 0.26), darkGunMat);
-    rHandguard.position.set(0.12, -0.02, 0.44);
+    rHandguard.position.set(0.12, -0.02, 0.38);
     rifleGroup.add(rHandguard);
 
     // Fluted Barrel
@@ -3644,7 +3650,7 @@ class CyberWarfareClient {
       new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.9, roughness: 0.2 })
     );
     rBarrel.rotation.x = Math.PI / 2;
-    rBarrel.position.set(0.15, 0.0, 0.70);
+    rBarrel.position.set(0.15, 0.0, 0.64);
     rifleGroup.add(rBarrel);
 
     // Muzzle Brake
@@ -3653,36 +3659,37 @@ class CyberWarfareClient {
       new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.95, roughness: 0.1 })
     );
     rMuzzle.rotation.x = Math.PI / 2;
-    rMuzzle.position.set(0.15, 0.0, 0.88);
+    rMuzzle.position.set(0.15, 0.0, 0.82);
     rifleGroup.add(rMuzzle);
 
     // Holographic Reflex Sight
     const rSight = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.14), gunMat);
-    rSight.position.set(0.18, 0.11, 0.28);
+    rSight.position.set(0.18, 0.11, 0.22);
     rifleGroup.add(rSight);
     const rReticle = new THREE.Mesh(
       new THREE.BoxGeometry(0.05, 0.05, 0.02),
-      new THREE.MeshBasicMaterial({ color: 0x00f6ff, transparent: true, opacity: 0.85 })
+      new THREE.MeshBasicMaterial({ color: suitColor, transparent: true, opacity: 0.85 })
     );
-    rReticle.position.set(0.18, 0.11, 0.32);
+    rReticle.position.set(0.18, 0.11, 0.26);
     rifleGroup.add(rReticle);
 
     // 3D Muzzle Flash Starburst Mesh (flashes on remote fire)
     const remoteFlash = new THREE.Mesh(
       new THREE.OctahedronGeometry(0.16, 0),
-      new THREE.MeshBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0 })
+      new THREE.MeshBasicMaterial({ color: suitColor, transparent: true, opacity: 0 })
     );
-    remoteFlash.position.set(0.15, 0.0, 0.94);
+    remoteFlash.position.set(0.15, 0.0, 0.88);
     rifleGroup.add(remoteFlash);
 
     weaponPivot.add(rifleGroup);
 
-    // 6. Thruster Jetpack on back
+    // 3. Thruster Jetpack on back
+    const darkMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.6 });
     const jetpack = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.6, 0.25), darkMat);
-    jetpack.position.set(0, 1.1, -0.35);
+    jetpack.position.set(0, 1.1, -0.30);
     mascot.add(jetpack);
 
-    // 7. Translucent Glowing Spherical Spawn Shield Bubble (3s Invulnerability)
+    // 4. Invulnerability Shield Bubble (semi-transparent sphere, starts invisible)
     const shieldGeo = new THREE.SphereGeometry(1.35, 24, 24);
     const shieldMat = new THREE.MeshStandardMaterial({
       color: suitColor,
@@ -3701,13 +3708,13 @@ class CyberWarfareClient {
     mascot.add(shieldBubble);
 
     if (!entity.isLobby) {
-      // 8. Floating 3D Overhead Billboard (Canvas Name & Health Bar)
+      // 5. Floating 3D Overhead Billboard (Canvas Name & Health Bar)
       const billboard = this.createOverheadBillboard(entity);
       billboard.position.set(0, 2.6, 0);
       mascot.add(billboard);
       mascot.userData.billboard = billboard;
 
-      // 9. Dedicated Raycast HitBox for crisp, reliable hit registration (invisible but raycastable)
+      // 6. Dedicated Raycast HitBox for crisp, reliable hit registration (invisible but raycastable)
       const hitBoxGeo = new THREE.CylinderGeometry(0.7, 0.7, 2.3, 8);
       const hitBoxMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
       const hitBox = new THREE.Mesh(hitBoxGeo, hitBoxMat);
@@ -3720,22 +3727,12 @@ class CyberWarfareClient {
       this.scene.add(mascot);
     }
 
-    mascot.userData.bodyMesh = torso;
-    mascot.userData.headGroup = headGroup;
-    mascot.userData.helmet = helmet;
-    mascot.userData.visor = visor;
-    mascot.userData.armL = armGroupL;
-    mascot.userData.armR = armGroupR;
-    mascot.userData.legL = legGroupL;
-    mascot.userData.legR = legGroupR;
+    mascot.userData.team = teamKey;
     mascot.userData.heldWeapon = rifleGroup;
     mascot.userData.weaponPivot = weaponPivot;
     mascot.userData.muzzleFlash = remoteFlash;
     mascot.userData.shieldBubble = shieldBubble;
-    mascot.userData.suitMat = suitMat;
     mascot.userData.accentMat = accentMat;
-    mascot.userData.visorMat = visorMat;
-    mascot.userData.eyeMat = eyeMat;
     mascot.userData.entity = entity;
 
     return mascot;
@@ -3796,9 +3793,20 @@ class CyberWarfareClient {
   updateMascotTeamColor(mascot, team) {
     if (!mascot || !mascot.userData) return;
     const isRed = (team === 'red');
+    const teamKey = isRed ? 'red' : 'blue';
     const suitColor = isRed ? 0xff0055 : 0x00f6ff;
-    const eyeColor = isRed ? 0xff0055 : 0x00f6ff;
     mascot.userData.team = team;
+
+    // Swap high-fidelity 3D GLB model in modelContainer
+    if (mascot.userData.modelContainer && this.characterTemplates && this.characterTemplates[teamKey]) {
+      while (mascot.userData.modelContainer.children.length > 0) {
+        mascot.userData.modelContainer.remove(mascot.userData.modelContainer.children[0]);
+      }
+      const newModel = this.characterTemplates[teamKey].clone(true);
+      newModel.scale.set(2.3, 2.3, 2.3);
+      mascot.userData.modelContainer.add(newModel);
+      mascot.userData.glbModel = newModel;
+    }
 
     if (mascot.userData.suitMat) {
       mascot.userData.suitMat.color.setHex(suitColor);
@@ -3806,12 +3814,12 @@ class CyberWarfareClient {
     if (mascot.userData.accentMat) {
       mascot.userData.accentMat.color.setHex(suitColor);
     }
-    if (mascot.userData.visorMat) {
-      mascot.userData.visorMat.color.setHex(suitColor);
-      mascot.userData.visorMat.emissive.setHex(suitColor);
+    if (mascot.userData.muzzleFlash && mascot.userData.muzzleFlash.material) {
+      mascot.userData.muzzleFlash.material.color.setHex(suitColor);
     }
-    if (mascot.userData.eyeMat) {
-      mascot.userData.eyeMat.color.setHex(eyeColor);
+    if (mascot.userData.shieldBubble && mascot.userData.shieldBubble.material) {
+      mascot.userData.shieldBubble.material.color.setHex(suitColor);
+      mascot.userData.shieldBubble.material.emissive.setHex(suitColor);
     }
     if (mascot.userData.billboard) {
       this.updateOverheadBillboard(mascot.userData.billboard, {
@@ -7855,6 +7863,17 @@ class CyberWarfareClient {
         }
         if (ent.mesh.userData.headGroup) {
           ent.mesh.userData.headGroup.position.y = THREE.MathUtils.lerp(ent.mesh.userData.headGroup.position.y, 1.8, dt * 10);
+        }
+      }
+
+      // 3D Model Locomotion Bobbing & Idle Breathing
+      if (ent.mesh.userData.modelContainer) {
+        if (isMoving) {
+          ent.mesh.userData.modelContainer.position.y = Math.abs(Math.sin(ent.animTime * 10)) * 0.08;
+          ent.mesh.userData.modelContainer.rotation.z = Math.sin(ent.animTime * 10) * 0.03;
+        } else {
+          ent.mesh.userData.modelContainer.position.y = Math.sin(ent.animTime * 3) * 0.02;
+          ent.mesh.userData.modelContainer.rotation.z = 0;
         }
       }
     }
