@@ -5195,7 +5195,7 @@ body.platform-mobile .start-subtext {
 .hud-customizer-overlay {
   position: fixed;
   inset: 0;
-  z-index: 99990;
+  z-index: 100020 !important;
   pointer-events: none;
   background: radial-gradient(circle at center, rgba(3, 7, 18, 0.25) 0%, rgba(3, 7, 18, 0.7) 100%);
   user-select: none;
@@ -5221,7 +5221,8 @@ body.platform-mobile .start-subtext {
   backdrop-filter: blur(16px);
   box-shadow: 0 12px 38px rgba(0, 0, 0, 0.88), 0 0 25px rgba(0, 246, 255, 0.35);
   pointer-events: auto !important;
-  z-index: 100010 !important;
+  touch-action: auto !important;
+  z-index: 100030 !important;
 }
 
 .het-left {
@@ -5323,6 +5324,8 @@ body.platform-mobile .start-subtext {
   border-radius: 4px;
   border: 1px solid rgba(0, 246, 255, 0.3);
   outline: none;
+  pointer-events: auto !important;
+  touch-action: pan-x !important;
 }
 
 .het-slider::-webkit-slider-thumb {
@@ -5346,6 +5349,7 @@ body.platform-mobile .start-subtext {
   display: flex;
   align-items: center;
   gap: 8px;
+  pointer-events: auto !important;
 }
 
 .btn-het-action {
@@ -5361,6 +5365,11 @@ body.platform-mobile .start-subtext {
   gap: 5px;
   transition: all 0.15s ease;
   white-space: nowrap;
+  pointer-events: auto !important;
+  touch-action: manipulation !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -webkit-tap-highlight-color: rgba(0, 246, 255, 0.3);
 }
 
 .btn-het-icon {
@@ -5450,7 +5459,7 @@ body.platform-mobile .start-subtext {
 body.hud-edit-mode #mobile-touch-hud {
   display: block !important;
   opacity: 1 !important;
-  pointer-events: auto !important;
+  pointer-events: none !important; /* CRITICAL: Never block pointer events across empty areas */
   z-index: 100005 !important;
 }
 
@@ -5496,33 +5505,96 @@ body.hud-edit-mode .hud-element-selected {
   }
 }
 
+/* Cyber HUD Toast Notification */
+.cyber-hud-toast {
+  position: fixed;
+  top: 72px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 22px;
+  border-radius: 8px;
+  font-family: var(--font-display, sans-serif);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: #fff;
+  z-index: 100050;
+  pointer-events: none;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+  transition: opacity 0.3s ease;
+  white-space: nowrap;
+}
+
+.cyber-hud-toast.cyber-toast-cyan {
+  background: rgba(8, 28, 44, 0.95);
+  border: 1.5px solid #00f6ff;
+  box-shadow: 0 0 22px rgba(0, 246, 255, 0.6);
+  color: #00f6ff;
+}
+
+.cyber-hud-toast.cyber-toast-amber {
+  background: rgba(44, 30, 8, 0.95);
+  border: 1.5px solid #fbbf24;
+  box-shadow: 0 0 22px rgba(251, 191, 36, 0.6);
+  color: #fbbf24;
+}
+
 /* Responsive Toolbar Optimization */
 @media (max-width: 768px) {
   .hud-editor-toolbar {
     width: 98vw;
-    padding: 6px 10px;
-    gap: 8px;
+    top: 6px;
+    padding: 6px 8px;
+    gap: 6px;
+    flex-wrap: wrap;
+    justify-content: center;
   }
   .het-left {
-    min-width: 120px;
+    min-width: 90px;
+    flex: 0 0 auto;
   }
   .het-title {
     font-size: 11px;
   }
   .het-selected-name {
-    max-width: 110px;
+    max-width: 95px;
     font-size: 10px;
   }
   .het-sliders-cluster {
     gap: 8px;
+    flex: 1 1 180px;
+    max-width: 100%;
+  }
+  .het-actions-cluster {
+    gap: 6px;
+    flex: 0 0 auto;
+    justify-content: center;
   }
   .btn-het-action {
-    padding: 5px 8px;
-    font-size: 9px;
+    padding: 6px 10px;
+    font-size: 10px;
+    min-height: 32px;
   }
   .hud-editor-tip-pill {
     font-size: 9px;
     padding: 3px 10px;
+    bottom: 8px;
+  }
+}
+
+@media (max-width: 500px) {
+  .hud-editor-toolbar {
+    top: 4px;
+    padding: 5px 6px;
+    gap: 5px;
+  }
+  .het-left {
+    display: none;
+  }
+  .btn-het-action {
+    padding: 5px 8px;
+    font-size: 9.5px;
   }
 }
 

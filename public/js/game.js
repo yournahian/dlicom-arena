@@ -5571,41 +5571,34 @@ class CyberWarfareClient {
     this.currentEditingHud = null;
     this.hudEditOrigin = 'lobby';
 
-    // Toolbar triggers
-    document.getElementById('btn-settings-custom-hud')?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      sounds.init();
-      sounds.playClick();
-      this.enterHudEditMode('settings');
-    });
+    // Robust Mobile Touch & Mouse Click Binding Helper
+    const bindTouchClick = (id, handler) => {
+      const el = document.getElementById(id);
+      if (!el) return;
 
-    document.getElementById('btn-pause-custom-hud')?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      sounds.init();
-      sounds.playClick();
-      this.enterHudEditMode('pause');
-    });
+      let lastTrigger = 0;
+      const onAction = (e) => {
+        const now = Date.now();
+        if (now - lastTrigger < 300) return; // Debounce double execution
+        lastTrigger = now;
+        e.preventDefault();
+        e.stopPropagation();
+        try {
+          sounds.init();
+          sounds.playClick();
+        } catch (_) {}
+        handler(e);
+      };
 
-    document.getElementById('btn-hud-save')?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      sounds.init();
-      sounds.playClick();
-      this.saveCustomHUD();
-    });
+      el.addEventListener('touchend', onAction, { passive: false });
+      el.addEventListener('click', onAction);
+    };
 
-    document.getElementById('btn-hud-reset')?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      sounds.init();
-      sounds.playClick();
-      this.resetCustomHUD();
-    });
-
-    document.getElementById('btn-hud-cancel')?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      sounds.init();
-      sounds.playClick();
-      this.exitHudEditMode(false);
-    });
+    bindTouchClick('btn-settings-custom-hud', () => this.enterHudEditMode('settings'));
+    bindTouchClick('btn-pause-custom-hud', () => this.enterHudEditMode('pause'));
+    bindTouchClick('btn-hud-save', () => this.saveCustomHUD());
+    bindTouchClick('btn-hud-reset', () => this.resetCustomHUD());
+    bindTouchClick('btn-hud-cancel', () => this.exitHudEditMode(false));
 
     // Sliders
     const scaleSlider = document.getElementById('het-scale-slider');
@@ -5807,9 +5800,16 @@ class CyberWarfareClient {
   }
 
   saveCustomHUD() {
-    if (!this.currentEditingHud) return;
+    if (!this.currentEditingHud) {
+      this.currentEditingHud = JSON.parse(JSON.stringify(this.DEFAULT_HUD_LAYOUT));
+    }
 
-    localStorage.setItem('dlicom_custom_hud', JSON.stringify(this.currentEditingHud));
+    try {
+      localStorage.setItem('dlicom_custom_hud', JSON.stringify(this.currentEditingHud));
+    } catch (err) {
+      console.warn('LocalStorage save error:', err);
+    }
+
     this.showToast('✅ CUSTOM HUD LAYOUT SAVED!', 'cyan');
     this.exitHudEditMode(true);
   }
@@ -5818,7 +5818,27 @@ class CyberWarfareClient {
     this.currentEditingHud = JSON.parse(JSON.stringify(this.DEFAULT_HUD_LAYOUT));
     this.renderHudLayout(this.currentEditingHud);
     this.selectHudButton(this.selectedHudKey || 'fireBtn');
-    this.showToast('↺ HUD RESET TO FACTORY PRESET', 'amber');
+    this.showToast('↺ HUD RESET TO DEFAULT', 'amber');
+  }
+
+  showToast(text, type = 'cyan') {
+    let toast = document.getElementById('cyber-hud-toast');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'cyber-hud-toast';
+      document.body.appendChild(toast);
+    }
+    toast.className = `cyber-hud-toast cyber-toast-${type}`;
+    toast.textContent = text;
+    toast.style.display = 'block';
+    toast.style.opacity = '1';
+    clearTimeout(this._hudToastTimeout);
+    this._hudToastTimeout = setTimeout(() => {
+      toast.style.opacity = '0';
+      setTimeout(() => {
+        if (toast.style.opacity === '0') toast.style.display = 'none';
+      }, 300);
+    }, 2200);
   }
 
   exitHudEditMode(saved = false) {
