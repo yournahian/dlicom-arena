@@ -1105,27 +1105,7 @@ class CyberWarfareClient {
     this.updateDeviceModeUI();
   }
 
-  toggleDeviceMode() {
-    this.setDeviceMode(!this.isTouch);
-    this.showToast(this.isTouch ? 'Switched to MOBILE Touch Controls' : 'Switched to PC Desktop (Mouse/Keyboard)', 'cyan');
-  }
-
   updateDeviceModeUI() {
-    const icon = document.getElementById('device-mode-icon');
-    const lbl = document.getElementById('device-mode-lbl');
-    if (icon) icon.textContent = this.isTouch ? '📱' : '🖥️';
-    if (lbl) lbl.textContent = this.isTouch ? 'MOBILE' : 'PC MODE';
-
-    const settingsDesc = document.getElementById('settings-device-mode-desc');
-    const settingsBtn = document.getElementById('btn-settings-device-toggle');
-    if (settingsDesc) settingsDesc.textContent = this.isTouch ? '📱 Mobile Touch Screen' : '🖥️ Desktop PC (Mouse & Keyboard)';
-    if (settingsBtn) settingsBtn.textContent = this.isTouch ? 'SWITCH TO PC' : 'SWITCH TO MOBILE';
-
-    const pauseDesc = document.getElementById('pause-device-mode-desc');
-    const pauseBtn = document.getElementById('btn-pause-device-toggle');
-    if (pauseDesc) pauseDesc.textContent = this.isTouch ? '📱 Mobile Touch Screen' : '🖥️ Desktop PC (Mouse/KB)';
-    if (pauseBtn) pauseBtn.textContent = this.isTouch ? 'SWITCH TO PC' : 'SWITCH TO MOBILE';
-
     if (this.isTouch) {
       document.body.classList.add('mobile-mode-enabled');
       if (this.inMatch) {
@@ -4354,22 +4334,6 @@ class CyberWarfareClient {
       }
     });
 
-    // Device Mode Switcher (PC / Mobile)
-    document.getElementById('btn-device-mode-toggle')?.addEventListener('click', () => {
-      sounds.init();
-      sounds.playClick();
-      this.toggleDeviceMode();
-    });
-    document.getElementById('btn-settings-device-toggle')?.addEventListener('click', () => {
-      sounds.init();
-      sounds.playClick();
-      this.toggleDeviceMode();
-    });
-    document.getElementById('btn-pause-device-toggle')?.addEventListener('click', () => {
-      sounds.init();
-      sounds.playClick();
-      this.toggleDeviceMode();
-    });
 
     // Spectator Prev/Next Target
     document.getElementById('btn-spec-prev')?.addEventListener('click', () => {
