@@ -861,18 +861,11 @@ const sounds = new SoundEngine();
 // 1B. RIGOROUS HARDWARE & POINTER DETECTION (NO FALSE POSITIVES)
 // ==========================================================================
 function detectPlatform() {
-  // 1. URL parameter override: ?mode=pc or ?mode=mobile
+  // 1. URL parameter override: ?mode=pc or ?mode=mobile (for explicit testing)
   try {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('mode') === 'mobile') return { isMobile: true, isDesktop: false };
     if (urlParams.get('mode') === 'pc') return { isMobile: false, isDesktop: true };
-  } catch (e) { }
-
-  // 2. Saved preference in localStorage
-  try {
-    const saved = localStorage.getItem('dlicom_device_mode');
-    if (saved === 'mobile') return { isMobile: true, isDesktop: false };
-    if (saved === 'pc') return { isMobile: false, isDesktop: true };
   } catch (e) { }
 
   const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
@@ -884,6 +877,11 @@ function detectPlatform() {
 
   // STRICT DECISION: Only treat as mobile if it behaves as a handheld mobile device
   const isMobile = (isMobileUserAgent || isCoarsePointer) && !isFinePointer && isSmallScreen;
+
+  // Clear stale localStorage key if on desktop PC
+  if (!isMobile) {
+    try { localStorage.removeItem('dlicom_device_mode'); } catch (e) { }
+  }
 
   return {
     isMobile: isMobile,
@@ -1092,23 +1090,27 @@ class CyberWarfareClient {
 
   setDeviceMode(isMobile) {
     this.isTouch = !!isMobile;
-    try {
-      localStorage.setItem('dlicom_device_mode', this.isTouch ? 'mobile' : 'pc');
-    } catch (e) { }
-    applyPlatformStyles();
+    if (this.isTouch) {
+      document.body.classList.add('platform-mobile');
+      document.body.classList.remove('platform-desktop');
+      document.documentElement.classList.add('platform-mobile');
+      document.documentElement.classList.remove('platform-desktop');
+    } else {
+      document.body.classList.add('platform-desktop');
+      document.body.classList.remove('platform-mobile');
+      document.documentElement.classList.add('platform-desktop');
+      document.documentElement.classList.remove('platform-mobile');
+      try { localStorage.removeItem('dlicom_device_mode'); } catch (e) { }
+    }
     this.updateDeviceModeUI();
   }
 
   toggleDeviceMode() {
-    const nextIsMobile = !detectPlatform().isMobile;
-    this.setDeviceMode(nextIsMobile);
-    this.showToast(nextIsMobile ? 'Switched to MOBILE Touch Controls' : 'Switched to PC Desktop (Mouse/Keyboard)', 'cyan');
+    this.setDeviceMode(!this.isTouch);
+    this.showToast(this.isTouch ? 'Switched to MOBILE Touch Controls' : 'Switched to PC Desktop (Mouse/Keyboard)', 'cyan');
   }
 
   updateDeviceModeUI() {
-    applyPlatformStyles();
-    this.isTouch = detectPlatform().isMobile;
-
     const icon = document.getElementById('device-mode-icon');
     const lbl = document.getElementById('device-mode-lbl');
     if (icon) icon.textContent = this.isTouch ? '📱' : '🖥️';

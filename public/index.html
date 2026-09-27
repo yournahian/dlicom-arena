@@ -19,24 +19,21 @@
       try {
         var urlParams = new URLSearchParams(window.location.search);
         var pMode = urlParams.get('mode');
-        var sMode = localStorage.getItem('dlicom_device_mode');
-        var isMobile = false;
 
-        if (pMode === 'mobile') {
-          isMobile = true;
-        } else if (pMode === 'pc') {
-          isMobile = false;
-        } else if (sMode === 'mobile') {
-          isMobile = true;
-        } else if (sMode === 'pc') {
-          isMobile = false;
-        } else {
-          var isCoarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
-          var isFine = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
-          var isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-          var isSmall = window.innerWidth <= 1024;
-          // STRICT DECISION: Only treat as mobile if it behaves as a handheld mobile device
-          isMobile = (isMobileUA || isCoarse) && !isFine && isSmall;
+        var isCoarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+        var isFine = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
+        var isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        var isSmall = window.innerWidth <= 1024;
+        
+        // STRICT DECISION: Only treat as mobile if it behaves as a handheld mobile device
+        var isMobile = (isMobileUA || isCoarse) && !isFine && isSmall;
+
+        if (pMode === 'mobile') isMobile = true;
+        if (pMode === 'pc') isMobile = false;
+
+        // Clear any stale mobile localStorage key on desktop PC
+        if (!isMobile) {
+          try { localStorage.removeItem('dlicom_device_mode'); } catch(e) {}
         }
 
         var root = document.documentElement;

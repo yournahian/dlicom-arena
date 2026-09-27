@@ -66,13 +66,13 @@ html, body {
   line-height: 1.4;
 }
 
-/* 3D WebGL Canvas Layer */
-canvas, #game-canvas {
+/* 3D WebGL Canvas Layer (Only target game WebGL canvas, not HUD/avatar 2D canvases) */
+#game-canvas {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100vw !important;
-  height: 100vh !important;
+  width: 100vw;
+  height: 100vh;
   display: block;
   touch-action: none;
   z-index: 1;
@@ -544,10 +544,16 @@ canvas, #game-canvas {
 }
 
 #mascot-avatar-canvas {
-  width: 62px;
-  height: 62px;
+  width: 62px !important;
+  height: 62px !important;
+  max-width: 62px !important;
+  max-height: 62px !important;
   border-radius: 50%;
   display: block;
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  z-index: 2;
 }
 
 .avatar-level-badge {
