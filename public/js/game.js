@@ -857,14 +857,80 @@ class SoundEngine {
 
 const sounds = new SoundEngine();
 
+// ==========================================================================
+// 1B. RIGOROUS HARDWARE & POINTER DETECTION (NO FALSE POSITIVES)
+// ==========================================================================
+function detectPlatform() {
+  // 1. URL parameter override: ?mode=pc or ?mode=mobile
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('mode') === 'mobile') return { isMobile: true, isDesktop: false };
+    if (urlParams.get('mode') === 'pc') return { isMobile: false, isDesktop: true };
+  } catch (e) { }
+
+  // 2. Saved preference in localStorage
+  try {
+    const saved = localStorage.getItem('dlicom_device_mode');
+    if (saved === 'mobile') return { isMobile: true, isDesktop: false };
+    if (saved === 'pc') return { isMobile: false, isDesktop: true };
+  } catch (e) { }
+
+  const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+  // Match precise pointer precision (Coarse = finger/touchscreen, Fine = mouse/trackpad)
+  const isCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
+  const isFinePointer = window.matchMedia('(pointer: fine)').matches;
+  const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const isSmallScreen = window.innerWidth <= 1024;
+
+  // STRICT DECISION: Only treat as mobile if it behaves as a handheld mobile device
+  const isMobile = (isMobileUserAgent || isCoarsePointer) && !isFinePointer && isSmallScreen;
+
+  return {
+    isMobile: isMobile,
+    isDesktop: !isMobile
+  };
+}
+
+let platform = detectPlatform();
+
+// Apply a root class to <html> or <body> immediately
+function applyPlatformStyles() {
+  platform = detectPlatform();
+  const root = document.documentElement;
+  const body = document.body;
+  if (platform.isMobile) {
+    if (root) {
+      root.classList.add('platform-mobile');
+      root.classList.remove('platform-desktop');
+    }
+    if (body) {
+      body.classList.add('platform-mobile');
+      body.classList.remove('platform-desktop');
+    }
+  } else {
+    if (root) {
+      root.classList.add('platform-desktop');
+      root.classList.remove('platform-mobile');
+    }
+    if (body) {
+      body.classList.add('platform-desktop');
+      body.classList.remove('platform-mobile');
+    }
+  }
+}
+
+window.addEventListener('resize', applyPlatformStyles);
+applyPlatformStyles();
+
 // -------------------------------------------------------------
 // 2. MAIN CLIENT GAME CLASS
 // -------------------------------------------------------------
 class CyberWarfareClient {
   constructor() {
+    applyPlatformStyles();
     this.canvas = document.getElementById('game-canvas');
     this.socket = null;
-    this.isTouch = this.detectDeviceMode();
+    this.isTouch = detectPlatform().isMobile;
 
     // Networking State
     this.selfId = null;
@@ -1021,36 +1087,7 @@ class CyberWarfareClient {
   }
 
   detectDeviceMode() {
-    // 1. URL parameter override: ?mode=pc or ?mode=mobile
-    try {
-      const urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('mode') === 'mobile') return true;
-      if (urlParams.get('mode') === 'pc') return false;
-    } catch (e) { }
-
-    // 2. Saved preference in localStorage
-    try {
-      const saved = localStorage.getItem('dlicom_device_mode');
-      if (saved === 'mobile') return true;
-      if (saved === 'pc') return false;
-    } catch (e) { }
-
-    // 3. User agent & hardware input detection
-    const ua = navigator.userAgent || '';
-    const isMobileUA = /Android|iPhone|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(ua) ||
-      (/iPad/i.test(ua)) ||
-      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-    const hasFinePointer = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
-    const isCoarseOnly = window.matchMedia && window.matchMedia('(pointer: coarse)').matches && !hasFinePointer;
-
-    // Mobile phones or touch tablets without mouse -> Mobile touch mode
-    if (isMobileUA || isCoarseOnly) {
-      return true;
-    }
-
-    // Default: Desktop PC / Laptop with mouse/keyboard -> PC mode!
-    return false;
+    return detectPlatform().isMobile;
   }
 
   setDeviceMode(isMobile) {
@@ -1058,15 +1095,20 @@ class CyberWarfareClient {
     try {
       localStorage.setItem('dlicom_device_mode', this.isTouch ? 'mobile' : 'pc');
     } catch (e) { }
+    applyPlatformStyles();
     this.updateDeviceModeUI();
   }
 
   toggleDeviceMode() {
-    this.setDeviceMode(!this.isTouch);
-    this.showToast(this.isTouch ? 'Switched to MOBILE Touch Controls' : 'Switched to PC Desktop (Mouse/Keyboard)', 'cyan');
+    const nextIsMobile = !detectPlatform().isMobile;
+    this.setDeviceMode(nextIsMobile);
+    this.showToast(nextIsMobile ? 'Switched to MOBILE Touch Controls' : 'Switched to PC Desktop (Mouse/Keyboard)', 'cyan');
   }
 
   updateDeviceModeUI() {
+    applyPlatformStyles();
+    this.isTouch = detectPlatform().isMobile;
+
     const icon = document.getElementById('device-mode-icon');
     const lbl = document.getElementById('device-mode-lbl');
     if (icon) icon.textContent = this.isTouch ? '📱' : '🖥️';
@@ -1094,7 +1136,9 @@ class CyberWarfareClient {
       document.getElementById('mobile-touch-hud')?.classList.add('hidden');
       document.getElementById('orientation-overlay')?.classList.add('hidden');
       if (this.inMatch) {
-        document.getElementById('hud-weapon-strip')?.classList.remove('hidden');
+        if (this.selectedMode === 'tdm') {
+          document.getElementById('hud-weapon-strip')?.classList.remove('hidden');
+        }
         document.getElementById('hud-bottom-right')?.classList.remove('hidden');
         document.getElementById('hud-tdm-bar')?.classList.remove('hidden');
       }
@@ -1751,6 +1795,9 @@ class CyberWarfareClient {
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(window.innerWidth, window.innerHeight);
     }
+    applyPlatformStyles();
+    this.isTouch = detectPlatform().isMobile;
+
     if (this.inMatch && this.isTouch) {
       document.body.classList.add('mobile-hud-active');
       document.getElementById('mobile-touch-hud')?.classList.remove('hidden');
@@ -5145,8 +5192,8 @@ class CyberWarfareClient {
 
     // Global touchstart handler
     const handleTouchStart = (e) => {
-      // Only process gameplay touch controls if mobile touch mode is active
-      if (!this.isTouch) return;
+      // Strictly bail out if desktop platform or touch disabled
+      if (!this.isTouch || detectPlatform().isDesktop) return;
 
       // If not in match or game is paused, let standard UI events pass through
       if (!this.inMatch || this.isPaused) return;
@@ -5311,7 +5358,7 @@ class CyberWarfareClient {
 
     // Global touchmove handler
     const handleTouchMove = (e) => {
-      if (!this.inMatch || this.isPaused || !this.isTouch) return;
+      if (!this.inMatch || this.isPaused || !this.isTouch || detectPlatform().isDesktop) return;
       e.preventDefault();
 
       const maxRadius = 45;
@@ -5373,7 +5420,7 @@ class CyberWarfareClient {
 
     // Global touchend & touchcancel handler
     const handleTouchEnd = (e) => {
-      if (!this.inMatch || !this.isTouch) return;
+      if (!this.inMatch || !this.isTouch || detectPlatform().isDesktop) return;
 
       for (let i = 0; i < e.changedTouches.length; i++) {
         const touch = e.changedTouches[i];
