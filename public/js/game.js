@@ -2641,6 +2641,7 @@ class CyberWarfareClient {
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
+    floor.userData.isNonCollidable = true;
     arenaGroup.add(floor);
 
     const grid = new THREE.GridHelper(80, 40, 0x00f6ff, 0x1e293b);
@@ -2799,6 +2800,7 @@ class CyberWarfareClient {
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
+    floor.userData.isNonCollidable = true;
     arenaGroup.add(floor);
 
     const grid = new THREE.GridHelper(80, 40, 0x10b981, 0x052e1e);
@@ -3022,6 +3024,7 @@ class CyberWarfareClient {
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
+    floor.userData.isNonCollidable = true;
     arenaGroup.add(floor);
 
     const grid = new THREE.GridHelper(80, 40, 0xbf00ff, 0x2e0e44);
@@ -3727,6 +3730,16 @@ class CyberWarfareClient {
       hitBox.userData.entityId = entity.id;
       mascot.add(hitBox);
       mascot.userData.hitBox = hitBox;
+
+      // 6b. Dedicated Head Hitbox for pinpoint precision headshot registration
+      const headHitBoxGeo = new THREE.SphereGeometry(0.42, 8, 8);
+      const headHitBox = new THREE.Mesh(headHitBoxGeo, hitBoxMat);
+      headHitBox.position.set(0, 1.85, 0);
+      headHitBox.userData.isHitBox = true;
+      headHitBox.userData.isHead = true;
+      headHitBox.userData.entityId = entity.id;
+      mascot.add(headHitBox);
+      mascot.userData.headMesh = headHitBox;
 
       this.scene.add(mascot);
     }
@@ -6108,23 +6121,27 @@ class CyberWarfareClient {
     const isHeadMap = new Map();
 
     for (const [id, ent] of this.remoteEntities) {
+      // In TDM, teammates never absorb or intercept bullets intended for opponents
+      if (this.gameMode === 'tdm' && ent.team === this.player.team) {
+        continue;
+      }
+
       if (ent.mesh && ent.health > 0) {
         if (ent.mesh.userData.hitBox) {
           candidateHitboxes.push(ent.mesh.userData.hitBox);
           entityByMesh.set(ent.mesh.userData.hitBox, id);
-          if (ent.mesh.userData.headMesh) {
-            candidateHitboxes.push(ent.mesh.userData.headMesh);
-            entityByMesh.set(ent.mesh.userData.headMesh, id);
-            isHeadMap.set(ent.mesh.userData.headMesh, true);
-          }
-        } else {
-          ent.mesh.traverse((child) => {
-            if (child.isMesh) {
-              candidateHitboxes.push(child);
-              entityByMesh.set(child, id);
-            }
-          });
         }
+        if (ent.mesh.userData.headMesh) {
+          candidateHitboxes.push(ent.mesh.userData.headMesh);
+          entityByMesh.set(ent.mesh.userData.headMesh, id);
+          isHeadMap.set(ent.mesh.userData.headMesh, true);
+        }
+        ent.mesh.traverse((child) => {
+          if (child.isMesh && child !== ent.mesh.userData.shieldBubble && !child.userData.isNonCollidable) {
+            candidateHitboxes.push(child);
+            entityByMesh.set(child, id);
+          }
+        });
       }
     }
 
@@ -6968,13 +6985,15 @@ class CyberWarfareClient {
           health: ent.health,
           team: ent.team,
           name: ent.name,
-          isBot: ent.isBot
+          isBot: ent.isBot,
+          isInvulnerable: !!ent.isInvulnerable
         };
         this.remoteEntities.set(ent.id, localEnt);
       } else {
         localEnt.targetPos.set(ent.x, ent.y, ent.z);
         localEnt.targetYaw = ent.yaw;
         localEnt.health = ent.health;
+        localEnt.isInvulnerable = !!ent.isInvulnerable;
         localEnt.mesh.visible = ent.isAlive;
         if (localEnt.team !== ent.team) {
           localEnt.team = ent.team;

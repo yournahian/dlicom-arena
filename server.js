@@ -255,16 +255,78 @@ function checkBotObstacleCollision(x, z, r = 0.6, mapId = 'warehouse') {
   return false;
 }
 
-// 2D Ray-AABB intersection test for ballistic line-of-sight occlusion
-function checkLineOfSight(x1, z1, x2, z2, mapId = 'warehouse') {
-  const boxes = SERVER_OBSTACLE_BOXES[mapId] || SERVER_OBSTACLE_BOXES.warehouse;
+// Exact 3D Unpadded Map Obstacles for Precise Ballistic Raycasting
+const SERVER_3D_OBSTACLES = {
+  warehouse: [
+    // 4 Shipping Containers (w: 6, h: 4, d: 12)
+    { minX: -21.0, maxX: -15.0, minY: 0.0, maxY: 4.0, minZ: -20.0, maxZ: -8.0 },
+    { minX: 15.0, maxX: 21.0, minY: 0.0, maxY: 4.0, minZ: 8.0, maxZ: 20.0 },
+    { minX: -25.0, maxX: -19.0, minY: 0.0, maxY: 4.0, minZ: 10.0, maxZ: 22.0 },
+    { minX: 19.0, maxX: 25.0, minY: 0.0, maxY: 4.0, minZ: -22.0, maxZ: -10.0 },
+    // 4 Server Towers (w: 4, h: 12, d: 4)
+    { minX: -30.0, maxX: -26.0, minY: 0.0, maxY: 12.0, minZ: -30.0, maxZ: -26.0 },
+    { minX: 26.0, maxX: 30.0, minY: 0.0, maxY: 12.0, minZ: -30.0, maxZ: -26.0 },
+    { minX: -30.0, maxX: -26.0, minY: 0.0, maxY: 12.0, minZ: 26.0, maxZ: 30.0 },
+    { minX: 26.0, maxX: 30.0, minY: 0.0, maxY: 12.0, minZ: 26.0, maxZ: 30.0 },
+    // Central catwalk floor platform (blocks bullets hitting the platform itself, NOT the open air above or below)
+    { minX: -16.0, maxX: 16.0, minY: 3.0, maxY: 4.0, minZ: -7.0, maxZ: 7.0 }
+  ],
+  vault: [
+    // Central Quantum Reactor Core
+    { minX: -4.2, maxX: 4.2, minY: 0.0, maxY: 14.0, minZ: -4.2, maxZ: 4.2 },
+    // Dais podium
+    { minX: -11.0, maxX: 11.0, minY: 0.0, maxY: 2.0, minZ: -11.0, maxZ: 11.0 },
+    // 8 Server monoliths
+    { minX: -20.25, maxX: -15.75, minY: 0.0, maxY: 5.5, minZ: -22.25, maxZ: -13.75 },
+    { minX: 15.75, maxX: 20.25, minY: 0.0, maxY: 5.5, minZ: 13.75, maxZ: 22.25 },
+    { minX: -20.25, maxX: -15.75, minY: 0.0, maxY: 5.5, minZ: 13.75, maxZ: 22.25 },
+    { minX: 15.75, maxX: 20.25, minY: 0.0, maxY: 5.5, minZ: -22.25, maxZ: -13.75 },
+    { minX: -30.25, maxX: -25.75, minY: 0.0, maxY: 5.0, minZ: -5.0, maxZ: 5.0 },
+    { minX: 25.75, maxX: 30.25, minY: 0.0, maxY: 5.0, minZ: -5.0, maxZ: 5.0 },
+    { minX: -5.0, maxX: 5.0, minY: 0.0, maxY: 5.0, minZ: -30.25, maxZ: -25.75 },
+    { minX: -5.0, maxX: 5.0, minY: 0.0, maxY: 5.0, minZ: 25.75, maxZ: 30.25 },
+    // 4 Energy containment towers
+    { minX: -7.9, maxX: -6.1, minY: 1.0, maxY: 9.0, minZ: -7.9, maxZ: -6.1 },
+    { minX: 6.1, maxX: 7.9, minY: 1.0, maxY: 9.0, minZ: -7.9, maxZ: -6.1 },
+    { minX: -7.9, maxX: -6.1, minY: 1.0, maxY: 9.0, minZ: 6.1, maxZ: 7.9 },
+    { minX: 6.1, maxX: 7.9, minY: 1.0, maxY: 9.0, minZ: 6.1, maxZ: 7.9 }
+  ],
+  rooftops: [
+    // Twin penthouse towers
+    { minX: -8.0, maxX: 8.0, minY: 0.0, maxY: 7.0, minZ: -34.0, maxZ: -22.0 },
+    { minX: -8.0, maxX: 8.0, minY: 0.0, maxY: 7.0, minZ: 22.0, maxZ: 34.0 },
+    // Central Helipad Platform
+    { minX: -12.0, maxX: 12.0, minY: 0.0, maxY: 3.2, minZ: -12.0, maxZ: 12.0 },
+    // HVAC chiller duct units
+    { minX: -18.5, maxX: -13.5, minY: 0.0, maxY: 2.8, minZ: -15.5, maxZ: -8.5 },
+    { minX: 13.5, maxX: 18.5, minY: 0.0, maxY: 2.8, minZ: 8.5, maxZ: 15.5 },
+    { minX: -19.5, maxX: -12.5, minY: 0.0, maxY: 2.8, minZ: 9.5, maxZ: 14.5 },
+    { minX: 12.5, maxX: 19.5, minY: 0.0, maxY: 2.8, minZ: -14.5, maxZ: -9.5 },
+    { minX: -27.0, maxX: -21.0, minY: 0.0, maxY: 3.2, minZ: -2.0, maxZ: 2.0 },
+    { minX: 21.0, maxX: 27.0, minY: 0.0, maxY: 3.2, minZ: -2.0, maxZ: 2.0 },
+    // Crane mast
+    { minX: -25.2, maxX: -22.8, minY: 0.0, maxY: 15.0, minZ: -25.2, maxZ: -22.8 }
+  ]
+};
+
+// True 3D Ray-AABB intersection test for ballistic line-of-sight occlusion
+function check3DLineOfSight(x1, y1, z1, x2, y2, z2, mapId = 'warehouse') {
+  const boxes = SERVER_3D_OBSTACLES[mapId] || SERVER_3D_OBSTACLES.warehouse;
   const dx = x2 - x1;
+  const dy = y2 - y1;
   const dz = z2 - z1;
+  const dist = Math.hypot(dx, dy, dz);
+  if (dist < 0.25) return true; // Direct contact / point-blank range
+
+  // Skip 25cm in front of shooter (gun muzzle clearance) and 15cm from target
+  const tminStart = Math.min(0.25 / dist, 0.15);
+  const tmaxEnd = Math.max((dist - 0.15) / dist, 0.85);
 
   for (const b of boxes) {
-    let tmin = 0;
-    let tmax = 1;
+    let tmin = tminStart;
+    let tmax = tmaxEnd;
 
+    // X slab
     if (Math.abs(dx) > 1e-6) {
       let t1 = (b.minX - x1) / dx;
       let t2 = (b.maxX - x1) / dx;
@@ -276,6 +338,19 @@ function checkLineOfSight(x1, z1, x2, z2, mapId = 'warehouse') {
       continue;
     }
 
+    // Y slab
+    if (Math.abs(dy) > 1e-6) {
+      let t1 = (b.minY - y1) / dy;
+      let t2 = (b.maxY - y1) / dy;
+      if (t1 > t2) { const tmp = t1; t1 = t2; t2 = tmp; }
+      tmin = Math.max(tmin, t1);
+      tmax = Math.min(tmax, t2);
+      if (tmin > tmax) continue;
+    } else if (y1 < b.minY || y1 > b.maxY) {
+      continue;
+    }
+
+    // Z slab
     if (Math.abs(dz) > 1e-6) {
       let t1 = (b.minZ - z1) / dz;
       let t2 = (b.maxZ - z1) / dz;
@@ -287,10 +362,17 @@ function checkLineOfSight(x1, z1, x2, z2, mapId = 'warehouse') {
       continue;
     }
 
-    // Intersects obstacle: Line of sight blocked!
+    // Solid obstacle blocks the bullet in 3D
     return false;
   }
   return true;
+}
+
+// Backward-compatible helper for 2D queries (bot AI)
+function checkLineOfSight(x1, z1, x2, z2, mapId = 'warehouse') {
+  const gh1 = getArenaGroundHeight(x1, z1, 0, mapId) + 1.6;
+  const gh2 = getArenaGroundHeight(x2, z2, 0, mapId) + 1.2;
+  return check3DLineOfSight(x1, gh1, z1, x2, gh2, z2, mapId);
 }
 
 // Rooms Registry
@@ -1137,7 +1219,7 @@ class GameRoom {
         p.isAlive = true;
         p.respawnAt = 0;
         p.isInvulnerable = true;
-        p.invulnerableUntil = now + 3000;
+        p.invulnerableUntil = now + 1500;
         p.isHealing = false;
         p.healItem = null;
         p.ammo = createDefaultAmmo();
@@ -1165,7 +1247,7 @@ class GameRoom {
         b.isAlive = true;
         b.respawnAt = 0;
         b.isInvulnerable = true;
-        b.invulnerableUntil = now + 3000;
+        b.invulnerableUntil = now + 1500;
 
         io.to(this.id).emit('playerRespawned', {
           id: b.id,
@@ -1417,9 +1499,10 @@ class GameRoom {
           bot.nextShootTime = now + (w.fireRateMs * (1.1 + Math.random() * 0.7));
 
           // Occlusion Raycast Check: Bots CANNOT shoot through solid walls or containers
-          const hasLOS = checkLineOfSight(bot.x, bot.z, target.x, target.z, this.mapId);
+          const hasLOS = check3DLineOfSight(bot.x, bot.y + 1.2, bot.z, target.x, target.y + 1.2, target.z, this.mapId);
 
           if (hasLOS) {
+            bot.invulnerableUntil = 0; // Active combat forfeits spawn immunity
             // Accuracy chance based on distance
             const hitChance = Math.max(0.35, 0.78 - dist * 0.014);
             const isHit = Math.random() < hitChance;
@@ -2391,6 +2474,9 @@ io.on('connection', (socket) => {
       socket.emit('healCancelled', { reason: 'Firing weapon cancelled medic item' });
     }
 
+    // Active combat: firing weapon immediately forfeits spawn invulnerability
+    player.invulnerableUntil = 0;
+
     const wDef = WEAPONS[data.weapon] || WEAPONS.ar;
     player.weapon = data.weapon;
 
@@ -2410,8 +2496,16 @@ io.on('connection', (socket) => {
         // Prevent friendly fire in TDM
         if (room.mode === 'tdm' && victim.team === player.team) return;
 
-        // Authoritative Line of Sight check: cannot shoot through solid map walls
-        if (!checkLineOfSight(player.x, player.z, victim.x, victim.z, room.mapId)) return;
+        // Authoritative 3D Line of Sight check
+        const ox = (data.origin && typeof data.origin.x === 'number') ? Number(data.origin.x) : player.x;
+        const oy = (data.origin && typeof data.origin.y === 'number') ? Number(data.origin.y) : (player.y + 1.6);
+        const oz = (data.origin && typeof data.origin.z === 'number') ? Number(data.origin.z) : player.z;
+
+        const tx = (data.targetPoint && typeof data.targetPoint.x === 'number') ? Number(data.targetPoint.x) : victim.x;
+        const ty = (data.targetPoint && typeof data.targetPoint.y === 'number') ? Number(data.targetPoint.y) : (victim.y + (data.isHeadshot ? 1.85 : 1.2));
+        const tz = (data.targetPoint && typeof data.targetPoint.z === 'number') ? Number(data.targetPoint.z) : victim.z;
+
+        if (!check3DLineOfSight(ox, oy, oz, tx, ty, tz, room.mapId)) return;
 
         const isHead = !!data.isHeadshot;
         let dmg = 0;
