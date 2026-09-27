@@ -871,12 +871,11 @@ function detectPlatform() {
   const hasTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
   // Match precise pointer precision (Coarse = finger/touchscreen, Fine = mouse/trackpad)
   const isCoarsePointer = window.matchMedia('(pointer: coarse)').matches;
-  const isFinePointer = window.matchMedia('(pointer: fine)').matches;
   const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const isSmallScreen = window.innerWidth <= 1024;
 
-  // STRICT DECISION: Only treat as mobile if it behaves as a handheld mobile device
-  const isMobile = (isMobileUserAgent || isCoarsePointer) && !isFinePointer && isSmallScreen;
+  // STRICT DECISION: Mobile if running mobile user agent OR on touch device with mobile/tablet dimensions
+  const isMobile = isMobileUserAgent || (hasTouch && (isCoarsePointer || isSmallScreen));
 
   // Clear stale localStorage key if on desktop PC
   if (!isMobile) {
@@ -2679,7 +2678,10 @@ class CyberWarfareClient {
     catwalk.castShadow = true;
     catwalk.receiveShadow = true;
     arenaGroup.add(catwalk);
-    this.mapColliders.push({ box: new THREE.Box3().setFromObject(catwalk), isPlatform: true });
+    const catwalkBox = new THREE.Box3().setFromObject(catwalk);
+    this.mapColliders.push({ box: catwalkBox, isPlatform: true });
+    // Solid catwalk base prevents walking through central structure from ground
+    this.obstacleBoxes.push(new THREE.Box3(new THREE.Vector3(-16.0, 0, -7.0), new THREE.Vector3(16.0, 3.5, 7.0)));
 
     // Catwalk Access Ramps
     const rampMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 });
@@ -2863,6 +2865,8 @@ class CyberWarfareClient {
     dais.position.set(0, 1.0, 0);
     arenaGroup.add(dais);
     this.mapColliders.push({ box: new THREE.Box3().setFromObject(dais), isPlatform: true });
+    // Dais podium blocks movement from ground level
+    this.obstacleBoxes.push(new THREE.Box3(new THREE.Vector3(-11.0, 0, -11.0), new THREE.Vector3(11.0, 2.0, 11.0)));
 
     // Towering 12m Glowing Hexagonal Quantum Reactor Core
     const coreOuterGeo = new THREE.CylinderGeometry(4.2, 4.2, 12.0, 6, 1, true);
@@ -2887,6 +2891,8 @@ class CyberWarfareClient {
     const coreInner = new THREE.Mesh(coreInnerGeo, coreInnerMat);
     coreInner.position.set(0, 7.0, 0);
     arenaGroup.add(coreInner);
+    // Solid Quantum Reactor Core prevents walking through center of vault
+    this.obstacleBoxes.push(new THREE.Box3(new THREE.Vector3(-4.5, 0, -4.5), new THREE.Vector3(4.5, 14.0, 4.5)));
 
     // 4 Corner Energy Containment Towers on the Dais
     const pMat = new THREE.MeshStandardMaterial({ color: 0x064e3b, metalness: 0.8, roughness: 0.2 });
@@ -3052,7 +3058,11 @@ class CyberWarfareClient {
       const mesh = new THREE.Mesh(new THREE.BoxGeometry(w.w, w.h, w.d), parapetMat);
       mesh.position.set(w.x, w.y, w.z);
       arenaGroup.add(mesh);
-      const b3 = new THREE.Box3().setFromObject(mesh);
+      // Visual mesh is 2.0m, but boundary extends to 25m so players jumping cannot fly off into open void
+      const b3 = new THREE.Box3(
+        new THREE.Vector3(w.x - w.w / 2, 0, w.z - w.d / 2),
+        new THREE.Vector3(w.x + w.w / 2, 25.0, w.z + w.d / 2)
+      );
       this.obstacleBoxes.push(b3);
       this.mapColliders.push({ box: b3 });
 
@@ -3091,7 +3101,10 @@ class CyberWarfareClient {
     const helipad = new THREE.Mesh(new THREE.BoxGeometry(24, 1.2, 24), heliMat);
     helipad.position.set(0, 2.6, 0);
     arenaGroup.add(helipad);
-    this.mapColliders.push({ box: new THREE.Box3().setFromObject(helipad), isPlatform: true });
+    const heliBox = new THREE.Box3().setFromObject(helipad);
+    this.mapColliders.push({ box: heliBox, isPlatform: true });
+    // Solid helipad base prevents walking through platform from ground level
+    this.obstacleBoxes.push(new THREE.Box3(new THREE.Vector3(-12.0, 0, -12.0), new THREE.Vector3(12.0, 3.2, 12.0)));
 
     // Helipad Access Ramps (East and West)
     const rampMat = new THREE.MeshStandardMaterial({ color: 0x241142, roughness: 0.5 });
@@ -5352,13 +5365,36 @@ class CyberWarfareClient {
 
         const splitThreshold = window.innerWidth * 0.45;
 
-        // ZONE A: LEFT 45% (DYNAMIC VIRTUAL JOYSTICK - MOVEMENT)
+        // ZONE A: LEFT 45% (VIRTUAL MOVEMENT JOYSTICK)
         if (touch.clientX <= splitThreshold) {
           if (!this.activeTouches.joystick) {
+            // Determine whether touch is near saved joystick or dynamic
+            let originX = touch.clientX;
+            let originY = touch.clientY;
+
+            if (jBase) {
+              const rect = jBase.getBoundingClientRect();
+              const centerX = rect.left + rect.width / 2;
+              const centerY = rect.top + rect.height / 2;
+              const distToCenter = Math.hypot(touch.clientX - centerX, touch.clientY - centerY);
+
+              // If touching within 110px of saved joystick, anchor to saved center for tactile muscle memory
+              if (distToCenter < 110) {
+                originX = centerX;
+                originY = centerY;
+              } else {
+                // Otherwise dynamically anchor to finger position
+                jBase.style.left = `${touch.clientX}px`;
+                jBase.style.top = `${touch.clientY}px`;
+                jBase.style.bottom = 'auto';
+              }
+              jBase.style.opacity = '0.9';
+            }
+
             this.activeTouches.joystick = {
               id: touch.identifier,
-              startX: touch.clientX,
-              startY: touch.clientY,
+              startX: originX,
+              startY: originY,
               currentX: touch.clientX,
               currentY: touch.clientY
             };
@@ -5367,13 +5403,6 @@ class CyberWarfareClient {
             this.touchJoystick.y = 0;
             this.touchJoystick.isSprint = false;
 
-            // Anchor joystick base directly centered under the user's thumb
-            if (jBase) {
-              jBase.style.left = `${touch.clientX}px`;
-              jBase.style.top = `${touch.clientY}px`;
-              jBase.style.bottom = 'auto';
-              jBase.style.opacity = '0.9';
-            }
             if (jThumb) {
               jThumb.style.transform = 'translate(0px, 0px)';
             }
@@ -5397,15 +5426,15 @@ class CyberWarfareClient {
       if (!this.inMatch || this.isPaused || !this.isTouch || detectPlatform().isDesktop) return;
       e.preventDefault();
 
-      const maxRadius = 45;
-      const baseSens = (this.mouseSensitivity || 0.0035) * 1.5;
+      const maxRadius = 60; // Optimized PUBG/Free Fire standard thumb sweep radius
+      const baseSens = (this.mouseSensitivity || 0.0032) * 1.35;
       const sensitivity = baseSens * (this.player.isADS ? 0.45 : 1.0);
       const maxPitch = (75 * Math.PI) / 180; // PUBG Standard +/- 75 degrees clamp
 
       for (let i = 0; i < e.changedTouches.length; i++) {
         const touch = e.changedTouches[i];
 
-        // 1. Dynamic Joystick Drag (Zone A)
+        // 1. Virtual Joystick Drag with Deadzone & Non-linear Curve (Zone A)
         if (this.activeTouches.joystick && touch.identifier === this.activeTouches.joystick.id) {
           const dx = touch.clientX - this.activeTouches.joystick.startX;
           const dy = touch.clientY - this.activeTouches.joystick.startY;
@@ -5413,20 +5442,29 @@ class CyberWarfareClient {
           const angle = Math.atan2(dy, dx);
           const clampedDist = Math.min(maxRadius, dist);
 
+          const deadzone = 6; // 6px deadzone eliminates thumb resting drift
+          let norm = 0;
+          if (clampedDist > deadzone) {
+            norm = (clampedDist - deadzone) / (maxRadius - deadzone);
+            // Non-linear power curve: fine creeping when nudged, full speed on sweep
+            norm = Math.pow(norm, 1.25);
+          }
+
+          this.touchJoystick.x = Math.cos(angle) * norm;
+          this.touchJoystick.y = Math.sin(angle) * norm;
+
+          // Pushing forward past 80% engages sprint (PUBG/Free Fire standard)
+          this.touchJoystick.isSprint = (dy < -0.80 * maxRadius);
+
           const tx = Math.cos(angle) * clampedDist;
           const ty = Math.sin(angle) * clampedDist;
-
-          this.touchJoystick.x = tx / maxRadius;
-          this.touchJoystick.y = ty / maxRadius;
-          // Pushing all the way forward triggers sprint (PUBG standard)
-          this.touchJoystick.isSprint = (dy < -0.85 * maxRadius);
 
           if (jThumb) {
             jThumb.style.transform = `translate(${tx}px, ${ty}px)`;
           }
         }
 
-        // 2. Relative Delta Look & Aim Drag (Zone B)
+        // 2. Relative Delta Look & Aim Drag with Jitter Filter (Zone B)
         if (this.activeTouches.look && touch.identifier === this.activeTouches.look.id) {
           const deltaX = touch.clientX - this.activeTouches.look.lastX;
           const deltaY = touch.clientY - this.activeTouches.look.lastY;
@@ -5434,22 +5472,30 @@ class CyberWarfareClient {
           this.activeTouches.look.lastX = touch.clientX;
           this.activeTouches.look.lastY = touch.clientY;
 
-          this.player.yaw -= deltaX * sensitivity;
-          this.player.pitch -= deltaY * sensitivity;
-          this.player.pitch = Math.max(-maxPitch, Math.min(maxPitch, this.player.pitch));
+          // Capacitive micro-jitter filter
+          const mag = Math.hypot(deltaX, deltaY);
+          if (mag > 0.35) {
+            this.player.yaw -= deltaX * sensitivity;
+            this.player.pitch -= deltaY * sensitivity;
+            this.player.pitch = Math.max(-maxPitch, Math.min(maxPitch, this.player.pitch));
+          }
         }
 
         // 3. Right Fire Button Drag-to-Aim while firing (PUBG Mobile Standard)
-        if (this.activeTouches.fire && touch.identifier === this.activeTouches.fire.id) {
+        // Only active if player is not already aiming with dedicated look finger
+        if (this.activeTouches.fire && touch.identifier === this.activeTouches.fire.id && !this.activeTouches.look) {
           const deltaX = touch.clientX - this.activeTouches.fire.lastX;
           const deltaY = touch.clientY - this.activeTouches.fire.lastY;
 
           this.activeTouches.fire.lastX = touch.clientX;
           this.activeTouches.fire.lastY = touch.clientY;
 
-          this.player.yaw -= deltaX * sensitivity;
-          this.player.pitch -= deltaY * sensitivity;
-          this.player.pitch = Math.max(-maxPitch, Math.min(maxPitch, this.player.pitch));
+          const mag = Math.hypot(deltaX, deltaY);
+          if (mag > 0.35) {
+            this.player.yaw -= deltaX * sensitivity;
+            this.player.pitch -= deltaY * sensitivity;
+            this.player.pitch = Math.max(-maxPitch, Math.min(maxPitch, this.player.pitch));
+          }
         }
       }
     };
@@ -7814,8 +7860,9 @@ class CyberWarfareClient {
     const targetVx = (forwardX * forward + rightX * strafe) * baseSpeed;
     const targetVz = (forwardZ * forward + rightZ * strafe) * baseSpeed;
 
-    this.player.vx = THREE.MathUtils.lerp(this.player.vx, targetVx, dt * 16);
-    this.player.vz = THREE.MathUtils.lerp(this.player.vz, targetVz, dt * 16);
+    const moveLerp = 1 - Math.exp(-20 * dt);
+    this.player.vx = THREE.MathUtils.lerp(this.player.vx, targetVx, moveLerp);
+    this.player.vz = THREE.MathUtils.lerp(this.player.vz, targetVz, moveLerp);
 
     // Forward camera tilt during sprint (+2 degrees = 0.0349 rad)
     const targetTilt = (isSprint && forward > 0) ? 0.0349 : 0.0;
@@ -7889,88 +7936,107 @@ class CyberWarfareClient {
       this.player.isGrounded = false;
     }
 
-    // AXIS-SEPARATED AABB OBSTACLE COLLISION WITH WALL SLIDING
-    const dx = this.player.vx * dt;
-    const dz = this.player.vz * dt;
-    let newX = this.player.x;
-    let newZ = this.player.z;
+    // SUB-STEPPED ROBUST OBSTACLE COLLISION WITH SMOOTH WALL SLIDING
+    const moveDist = Math.hypot(this.player.vx, this.player.vz) * dt;
+    const maxSubStep = 0.12; // 12cm max sub-step: guarantees zero tunneling through any wall or building
+    const numSteps = Math.max(1, Math.min(8, Math.ceil(moveDist / maxSubStep)));
+    const stepDt = dt / numSteps;
 
-    // 1. Candidate X Movement Evaluation
-    if (Math.abs(dx) > 0.0001) {
-      const candX = this.player.x + dx;
-      const testBoxX = new THREE.Box3(
-        new THREE.Vector3(candX - playerRadius, newY, this.player.z - playerRadius),
-        new THREE.Vector3(candX + playerRadius, newY + playerHeight, this.player.z + playerRadius)
-      );
-      let hitObstacleX = false;
-      for (const box of this.obstacleBoxes) {
-        if (newY >= box.max.y - 0.1) continue;
-        if (newY + playerHeight <= box.min.y + 0.1) continue;
-        if (testBoxX.intersectsBox(box)) {
-          hitObstacleX = true;
-          break;
-        }
-      }
-      if (!hitObstacleX && Math.abs(candX) <= 37.4) {
-        newX = candX;
-      } else {
-        this.player.vx = 0;
-      }
-    }
+    const r = playerRadius; // 0.6m
+    const h = playerHeight; // 1.8m
 
-    // 2. Candidate Z Movement Evaluation (evaluated against updated newX)
-    if (Math.abs(dz) > 0.0001) {
-      const candZ = this.player.z + dz;
-      const testBoxZ = new THREE.Box3(
-        new THREE.Vector3(newX - playerRadius, newY, candZ - playerRadius),
-        new THREE.Vector3(newX + playerRadius, newY + playerHeight, candZ + playerRadius)
-      );
-      let hitObstacleZ = false;
-      for (const box of this.obstacleBoxes) {
-        if (newY >= box.max.y - 0.1) continue;
-        if (newY + playerHeight <= box.min.y + 0.1) continue;
-        if (testBoxZ.intersectsBox(box)) {
-          hitObstacleZ = true;
-          break;
-        }
-      }
-      if (!hitObstacleZ && Math.abs(candZ) <= 37.4) {
-        newZ = candZ;
-      } else {
-        this.player.vz = 0;
-      }
-    }
+    for (let step = 0; step < numSteps; step++) {
+      const stepDx = this.player.vx * stepDt;
+      const stepDz = this.player.vz * stepDt;
 
-    // Arena boundary clamp [-37.4, 37.4]
-    this.player.x = Math.max(-37.4, Math.min(37.4, newX));
-    this.player.y = newY;
-    this.player.z = Math.max(-37.4, Math.min(37.4, newZ));
+      // 1. Move along X axis with surface clamping & wall sliding
+      if (Math.abs(stepDx) > 0.00001) {
+        let candX = this.player.x + stepDx;
 
-    // Collision De-penetration Safety Push-out:
-    // If the player clips into an obstacle box or wall, gently push them out along the shallowest penetration axis
-    if (this.obstacleBoxes && this.obstacleBoxes.length > 0) {
-      const currentBox = new THREE.Box3(
-        new THREE.Vector3(this.player.x - playerRadius, this.player.y, this.player.z - playerRadius),
-        new THREE.Vector3(this.player.x + playerRadius, this.player.y + playerHeight, this.player.z + playerRadius)
-      );
-      for (const box of this.obstacleBoxes) {
-        if (this.player.y >= box.max.y - 0.1 || this.player.y + playerHeight <= box.min.y + 0.1) continue;
-        if (currentBox.intersectsBox(box)) {
-          const overlapX1 = currentBox.max.x - box.min.x;
-          const overlapX2 = box.max.x - currentBox.min.x;
-          const overlapZ1 = currentBox.max.z - box.min.z;
-          const overlapZ2 = box.max.z - currentBox.min.z;
-          const pushX = overlapX1 < overlapX2 ? -overlapX1 : overlapX2;
-          const pushZ = overlapZ1 < overlapZ2 ? -overlapZ1 : overlapZ2;
+        for (let i = 0; i < this.obstacleBoxes.length; i++) {
+          const b = this.obstacleBoxes[i];
+          // Check vertical height overlap
+          if (newY + h <= b.min.y + 0.05 || newY >= b.max.y - 0.05) continue;
 
-          if (Math.abs(pushX) < Math.abs(pushZ)) {
-            this.player.x += pushX;
-          } else {
-            this.player.z += pushZ;
+          // Check if Z range overlaps obstacle
+          if (this.player.z + r > b.min.z && this.player.z - r < b.max.z) {
+            if (stepDx > 0) {
+              // Moving towards +X: check if player right edge crosses obstacle left face
+              if (this.player.x + r <= b.min.x + 0.08 && candX + r >= b.min.x) {
+                candX = b.min.x - r - 0.002;
+                this.player.vx = 0;
+              }
+            } else if (stepDx < 0) {
+              // Moving towards -X: check if player left edge crosses obstacle right face
+              if (this.player.x - r >= b.max.x - 0.08 && candX - r <= b.max.x) {
+                candX = b.max.x + r + 0.002;
+                this.player.vx = 0;
+              }
+            }
           }
         }
+
+        // Clamp to arena boundary [-37.4, 37.4]
+        if (candX < -37.4) { candX = -37.4; this.player.vx = 0; }
+        if (candX > 37.4) { candX = 37.4; this.player.vx = 0; }
+        this.player.x = candX;
+      }
+
+      // 2. Move along Z axis with surface clamping & wall sliding
+      if (Math.abs(stepDz) > 0.00001) {
+        let candZ = this.player.z + stepDz;
+
+        for (let i = 0; i < this.obstacleBoxes.length; i++) {
+          const b = this.obstacleBoxes[i];
+          // Check vertical height overlap
+          if (newY + h <= b.min.y + 0.05 || newY >= b.max.y - 0.05) continue;
+
+          // Check if X range overlaps obstacle
+          if (this.player.x + r > b.min.x && this.player.x - r < b.max.x) {
+            if (stepDz > 0) {
+              // Moving towards +Z: check if player front edge crosses obstacle back face
+              if (this.player.z + r <= b.min.z + 0.08 && candZ + r >= b.min.z) {
+                candZ = b.min.z - r - 0.002;
+                this.player.vz = 0;
+              }
+            } else if (stepDz < 0) {
+              // Moving towards -Z: check if player back edge crosses obstacle front face
+              if (this.player.z - r >= b.max.x - 0.08 && candZ - r <= b.max.z) {
+                candZ = b.max.z + r + 0.002;
+                this.player.vz = 0;
+              }
+            }
+          }
+        }
+
+        // Clamp to arena boundary [-37.4, 37.4]
+        if (candZ < -37.4) { candZ = -37.4; this.player.vz = 0; }
+        if (candZ > 37.4) { candZ = 37.4; this.player.vz = 0; }
+        this.player.z = candZ;
       }
     }
+
+    // Safety Recovery: If player is stuck inside any obstacle, gently pop out to nearest exterior face
+    for (let i = 0; i < this.obstacleBoxes.length; i++) {
+      const b = this.obstacleBoxes[i];
+      if (newY + h <= b.min.y + 0.05 || newY >= b.max.y - 0.05) continue;
+
+      if (this.player.x + r > b.min.x && this.player.x - r < b.max.x &&
+          this.player.z + r > b.min.z && this.player.z - r < b.max.z) {
+        const dLeft = (this.player.x + r) - b.min.x;
+        const dRight = b.max.x - (this.player.x - r);
+        const dFront = (this.player.z + r) - b.min.z;
+        const dBack = b.max.z - (this.player.z - r);
+        const minOverlap = Math.min(dLeft, dRight, dFront, dBack);
+
+        if (minOverlap === dLeft) this.player.x = b.min.x - r - 0.005;
+        else if (minOverlap === dRight) this.player.x = b.max.x + r + 0.005;
+        else if (minOverlap === dFront) this.player.z = b.min.z - r - 0.005;
+        else if (minOverlap === dBack) this.player.z = b.max.z + r + 0.005;
+      }
+    }
+
+    this.player.y = newY;
 
     // Update Camera position and orientation (eye height: 1.65m + landing dip)
     if (this.deathCamActive) {
