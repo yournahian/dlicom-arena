@@ -853,6 +853,155 @@ class SoundEngine {
     osc.start(startTime);
     osc.stop(startTime + dur);
   }
+
+  // --- PROCEDURAL AAA LOADING SCREEN SOUNDS (WEB AUDIO API) ---
+  startLoadingDrone() {
+    if (this.loadingDroneGain || this.masterMuted) return;
+    try {
+      this.init();
+      if (!this.ctx) return;
+      const now = this.ctx.currentTime;
+
+      // Deep sub-bass fundamental (55Hz / A1)
+      const osc1 = this.ctx.createOscillator();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(55, now);
+
+      // Warm harmonic texture (110Hz / A2 triangle)
+      const osc2 = this.ctx.createOscillator();
+      osc2.type = 'triangle';
+      osc2.frequency.setValueAtTime(110, now);
+
+      // Lowpass filter to ensure dark, warm, suspenseful drone
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(150, now);
+      filter.Q.setValueAtTime(1.5, now);
+
+      // Subtle atmospheric breathing LFO
+      const lfo = this.ctx.createOscillator();
+      lfo.frequency.setValueAtTime(0.35, now);
+      const lfoGain = this.ctx.createGain();
+      lfoGain.gain.setValueAtTime(0.015, now);
+      lfo.connect(lfoGain);
+
+      // Master drone gain
+      const droneGain = this.ctx.createGain();
+      droneGain.gain.setValueAtTime(0.001, now);
+      droneGain.gain.exponentialRampToValueAtTime(0.045, now + 0.8);
+      lfoGain.connect(droneGain.gain);
+
+      osc1.connect(filter);
+      osc2.connect(filter);
+      filter.connect(droneGain);
+      droneGain.connect(this.ctx.destination);
+
+      osc1.start(now);
+      osc2.start(now);
+      lfo.start(now);
+
+      this.loadingDroneOscs = [osc1, osc2, lfo];
+      this.loadingDroneGain = droneGain;
+    } catch (e) {
+      // Browser autoplay policy catches here without throwing uncaught errors
+    }
+  }
+
+  stopLoadingDrone() {
+    if (!this.loadingDroneGain || !this.ctx) return;
+    try {
+      const now = this.ctx.currentTime;
+      this.loadingDroneGain.gain.cancelScheduledValues(now);
+      this.loadingDroneGain.gain.setValueAtTime(this.loadingDroneGain.gain.value, now);
+      this.loadingDroneGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
+      setTimeout(() => {
+        if (this.loadingDroneOscs) {
+          this.loadingDroneOscs.forEach(o => {
+            try { o.stop(); o.disconnect(); } catch (err) {}
+          });
+          this.loadingDroneOscs = null;
+        }
+        this.loadingDroneGain = null;
+      }, 500);
+    } catch (e) {}
+  }
+
+  playMilestoneChirp(stage = 1) {
+    if (!this.ctx || this.masterMuted) return;
+    try {
+      const now = this.ctx.currentTime;
+      const baseFreq = 920 + stage * 230; // 1150Hz, 1380Hz, 1610Hz, 1840Hz
+
+      // Dual digital blips
+      [0, 0.04].forEach((offset, idx) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        const f = baseFreq + (idx === 1 ? 360 : 0);
+        osc.frequency.setValueAtTime(f, now + offset);
+        osc.frequency.exponentialRampToValueAtTime(f * 1.15, now + offset + 0.035);
+
+        gain.gain.setValueAtTime(0.05, now + offset);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.035);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now + offset);
+        osc.stop(now + offset + 0.04);
+      });
+    } catch (e) {}
+  }
+
+  playEnterLobbyChime() {
+    if (!this.ctx || this.masterMuted) return;
+    try {
+      const now = this.ctx.currentTime;
+
+      // 1. Cyber Swoosh (Frequency-swept bandpass filtered noise)
+      if (this.noiseBuffer) {
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = this.noiseBuffer;
+        const nFilter = this.ctx.createBiquadFilter();
+        nFilter.type = 'bandpass';
+        nFilter.Q.setValueAtTime(2.5, now);
+        nFilter.frequency.setValueAtTime(320, now);
+        nFilter.frequency.exponentialRampToValueAtTime(3400, now + 0.38);
+
+        const nGain = this.ctx.createGain();
+        nGain.gain.setValueAtTime(0.001, now);
+        nGain.gain.exponentialRampToValueAtTime(0.12, now + 0.08);
+        nGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.45);
+
+        noise.connect(nFilter);
+        nFilter.connect(nGain);
+        nGain.connect(this.ctx.destination);
+
+        noise.start(now);
+        noise.stop(now + 0.5);
+      }
+
+      // 2. Crystalline Cyber Chord (C5, E5, G5, C6 arpeggiated)
+      const freqs = [523.25, 659.25, 783.99, 1046.50];
+      freqs.forEach((freq, idx) => {
+        const delay = idx * 0.045;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, now + delay);
+
+        gain.gain.setValueAtTime(0.001, now + delay);
+        gain.gain.linearRampToValueAtTime(0.08, now + delay + 0.015);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + delay + 0.7);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now + delay);
+        osc.stop(now + delay + 0.75);
+      });
+    } catch (e) {}
+  }
 }
 
 const sounds = new SoundEngine();
@@ -1219,67 +1368,169 @@ class CyberWarfareClient {
     requestAnimationFrame((t) => this.renderLoop(t));
   }
 
-  // --- RETRO CYBER BOOT LOADING SCREEN INITIALIZER ---
+  // --- AAA BATTLE ROYALE LOADING SCREEN INITIALIZER ---
   initBootLoadingScreen() {
     const loadingScreen = document.getElementById('loadingScreen');
     if (!loadingScreen) return;
 
-    const statusEl = document.getElementById('boot-status-text');
-    const percentEl = document.getElementById('boot-percent-text');
-    const fillEl = document.getElementById('boot-progress-bar');
+    const statusEl = document.getElementById('loading-status-text');
+    const asciiEl = document.getElementById('loading-ascii-blocks');
+    const percentEl = document.getElementById('loading-percent-num');
+    const fillEl = document.getElementById('loading-progress-fill');
+    const progressTrackEl = document.getElementById('br-progress-track');
     const enterBtn = document.getElementById('btn-enter-arena');
+    const pingEl = document.getElementById('loading-ping-display');
+    const tipTextEl = document.getElementById('br-tip-text');
 
-    const statusTexts = [
-      "INITIALIZING VOXEL ENGINE...",
-      "SYNCING DLICOM BLOCKCHAIN NODES...",
-      "CALIBRATING RAYCAST BALLISTICS...",
-      "ESTABLISHING 30Hz SOCKET MATRIX...",
-      "SYSTEM READY - LAUNCHING LOBBY"
+    // 1. Procedural Ambient Drone Start (User gesture fallback attached)
+    sounds.startLoadingDrone();
+    const tryResumeAudio = () => {
+      sounds.init();
+      sounds.startLoadingDrone();
+    };
+    loadingScreen.addEventListener('pointerdown', tryResumeAudio, { once: true });
+
+    // 2. Tactical Tips Rotator (Cycles every 3 seconds with smooth fade)
+    const tacticalTips = [
+      "Headshots with the Cyber Sniper deal 2x critical damage for an instant knockout!",
+      "Purple jump pads launch you onto high catwalks for an aerial advantage.",
+      "Stay inside the Safe Zone! The Glitch Ring deals increasing damage each phase.",
+      "Cyber Medkits fully restore 100 HP. Find cover before using them!",
+      "You can create private custom matches and invite players from World Chat."
     ];
+    let tipIndex = 0;
+    const tipInterval = setInterval(() => {
+      if (!tipTextEl) return;
+      tipIndex = (tipIndex + 1) % tacticalTips.length;
+      tipTextEl.classList.add('tip-fade-out');
+      setTimeout(() => {
+        tipTextEl.textContent = tacticalTips[tipIndex];
+        tipTextEl.classList.remove('tip-fade-out');
+      }, 350);
+    }, 3000);
+
+    // 3. Ping Latency Jitter Simulation (16ms - 21ms)
+    const pingInterval = setInterval(() => {
+      if (!pingEl) return;
+      const simulatedPing = 16 + Math.floor(Math.random() * 6);
+      pingEl.textContent = `PING: ${simulatedPing}ms`;
+    }, 1200);
+
+    // 4. Multi-Stage Progress Controller with Milestone Audio Chimes
+    let currentPct = 0;
+    let targetPct = 0;
+    let isComplete = false;
+    const milestonesHit = new Set();
 
     const startTime = performance.now();
-    const duration = 2500; // 2.5 seconds total boot loading ramp
-    let isComplete = false;
 
-    const updateLoading = (now) => {
+    const getTargetForElapsed = (elapsed) => {
+      // Stage 1: Fast ramp 0% -> 45% (DOM & Three.js boot) over 650ms
+      if (elapsed < 650) {
+        return Math.floor((elapsed / 650) * 45);
+      }
+      // Stage 2: Smooth climb 45% -> 65% over 500ms
+      if (elapsed < 1150) {
+        return 45 + Math.floor(((elapsed - 650) / 500) * 20);
+      }
+      // Stage 3: Deliberate brief pause at 65% (Compiling map geometry and colliders) for 350ms
+      if (elapsed < 1500) {
+        return 65;
+      }
+      // Stage 4: Steady ramp 65% -> 92% (Syncing weapon ballistics & assets) over 650ms
+      if (elapsed < 2150) {
+        return 65 + Math.floor(((elapsed - 1500) / 650) * 27);
+      }
+      // Stage 5: Final completion to 100% over 400ms
+      if (elapsed < 2550) {
+        return 92 + Math.floor(((elapsed - 2150) / 400) * 8);
+      }
+      return 100;
+    };
+
+    const updateFrame = (now) => {
       const elapsed = now - startTime;
-      const progress = Math.min(1.0, elapsed / duration);
+      targetPct = getTargetForElapsed(elapsed);
 
-      // Percentage counter ramping 0% -> 100%
-      const pct = Math.floor(progress * 100);
-      if (percentEl) percentEl.textContent = `${pct}%`;
-      if (fillEl) fillEl.style.width = `${pct}%`;
+      if (currentPct < targetPct) {
+        currentPct++;
 
-      // Cycle status text every 400ms
-      const textIdx = Math.min(statusTexts.length - 1, Math.floor(elapsed / 400));
-      if (statusEl) statusEl.textContent = statusTexts[textIdx];
+        // Render Fill Width & Percent Counter
+        if (fillEl) fillEl.style.width = `${currentPct}%`;
+        if (percentEl) percentEl.textContent = `${currentPct}%`;
 
-      if (progress < 1.0) {
-        requestAnimationFrame(updateLoading);
-      } else {
+        // Render ASCII Blocks Readout: [██████████░░░░] 74%
+        if (asciiEl) {
+          const filled = Math.min(10, Math.floor(currentPct / 10));
+          const empty = 10 - filled;
+          asciiEl.textContent = `[${'█'.repeat(filled)}${'░'.repeat(empty)}]`;
+        }
+
+        // Ticker Status Transitions
+        if (statusEl) {
+          if (currentPct < 35) {
+            statusEl.textContent = "CONNECTING TO VOXEL SERVERS...";
+          } else if (currentPct < 65) {
+            statusEl.textContent = "LOADING CYBER WAREHOUSE ASSETS...";
+          } else if (currentPct < 90) {
+            statusEl.textContent = "SYNCING WEAPON BALANCING...";
+          } else if (currentPct < 100) {
+            statusEl.textContent = "READY FOR DROP";
+          } else {
+            statusEl.textContent = "READY FOR DROP // ALL ASSETS COMPILED";
+          }
+        }
+
+        // Milestone Digital Chirps (25%, 50%, 75%, 100%)
+        [25, 50, 75, 100].forEach((ms, idx) => {
+          if (currentPct >= ms && !milestonesHit.has(ms)) {
+            milestonesHit.add(ms);
+            sounds.playMilestoneChirp(idx + 1);
+          }
+        });
+      }
+
+      if (currentPct < 100) {
+        requestAnimationFrame(updateFrame);
+      } else if (!isComplete) {
         isComplete = true;
-        if (percentEl) percentEl.textContent = '100%';
-        if (fillEl) fillEl.style.width = '100%';
-        if (statusEl) statusEl.textContent = "SYSTEM READY - LAUNCHING LOBBY";
+        if (statusEl) statusEl.textContent = "READY FOR DROP // ALL ASSETS COMPILED";
+        if (asciiEl) asciiEl.textContent = "[██████████]";
+        if (percentEl) percentEl.textContent = "100%";
+        if (fillEl) fillEl.style.width = "100%";
+
+        // Morph Progress Track into Glowing Action Button
+        if (progressTrackEl) progressTrackEl.style.display = 'none';
         if (enterBtn) {
           enterBtn.classList.remove('hidden');
-          enterBtn.style.opacity = '1';
+          enterBtn.focus();
         }
       }
     };
 
-    requestAnimationFrame(updateLoading);
+    requestAnimationFrame(updateFrame);
 
+    // 5. Audio Unlock & Lobby Launch Sequence
     let entered = false;
     const enterArena = () => {
       if (entered || !isComplete) return;
       entered = true;
+
+      // Clear timers
+      clearInterval(tipInterval);
+      clearInterval(pingInterval);
+
+      // Web Audio API unlock + Cyber Swoosh Chime
       sounds.init();
+      sounds.stopLoadingDrone();
+      sounds.playEnterLobbyChime();
       sounds.playLobbyMusic(true);
+
+      // Smooth AAA fade out
       loadingScreen.classList.add('fade-out');
       setTimeout(() => {
         loadingScreen.style.display = 'none';
-      }, 800);
+      }, 700);
     };
 
     if (enterBtn) {
@@ -1287,9 +1538,10 @@ class CyberWarfareClient {
       enterBtn.addEventListener('touchend', enterArena);
     }
 
-    // Keyboard support (Press Space or Enter to enter arena once 100%)
+    // Keyboard support: Press Space or Enter to enter lobby once 100%
     window.addEventListener('keydown', (e) => {
       if ((e.code === 'Space' || e.code === 'Enter') && isComplete && !entered) {
+        e.preventDefault();
         enterArena();
       }
     });

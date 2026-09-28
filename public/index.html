@@ -61,54 +61,385 @@
   <!-- 3D WebGL Canvas Layer -->
   <canvas id="game-canvas"></canvas>
 
-  <!-- ================= 0. RETRO CYBER BOOT LOADING SCREEN ================= -->
-  <div id="loadingScreen" class="loading-screen-overlay">
-    <div class="crt-scanlines"></div>
-    <div class="crt-vignette"></div>
-    <div class="boot-container">
-      <!-- Glowing SVG Astronaut Helmet Silhouette -->
-      <div class="boot-icon-wrap">
-        <svg class="boot-helmet-svg" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="50" cy="50" r="46" stroke="#00f6ff" stroke-width="2" stroke-dasharray="6 4" class="boot-ring-spin" />
-          <path d="M26 44C26 30 36 20 50 20C64 20 74 30 74 44V58C74 66 66 74 56 74H44C34 74 26 66 26 58V44Z" fill="#0b172a" stroke="#00f6ff" stroke-width="3" />
-          <path d="M34 42C34 34 40 28 50 28C60 28 66 34 66 42V48C66 54 60 58 50 58C40 58 34 54 34 48V42Z" fill="url(#visorGrad)" stroke="#38bdf8" stroke-width="2" />
-          <path d="M38 40C40 34 45 32 50 32" stroke="#ffffff" stroke-width="2" stroke-linecap="round" opacity="0.8" />
-          <!-- Antenna / Comm array -->
-          <line x1="50" y1="20" x2="50" y2="12" stroke="#00f6ff" stroke-width="3" stroke-linecap="round" />
-          <circle cx="50" cy="10" r="3" fill="#10b981" />
-          <defs>
-            <linearGradient id="visorGrad" x1="34" y1="28" x2="66" y2="58" gradientUnits="userSpaceOnUse">
-              <stop stop-color="#00f6ff" stop-opacity="0.85" />
-              <stop offset="1" stop-color="#3b82f6" stop-opacity="0.95" />
-            </linearGradient>
-          </defs>
-        </svg>
-      </div>
+  <!-- ================= 0. AAA BATTLE ROYALE LOADING SCREEN ================= -->
+  <div id="loadingScreen" class="br-loading-screen" role="dialog" aria-modal="true" aria-label="Game Loading Screen">
+    <!-- Atmospheric Cyber Layers -->
+    <div class="br-loading-bg"></div>
+    <div class="br-loading-grid"></div>
+    <div class="br-loading-smoke"></div>
+    <div class="br-loading-vignette"></div>
 
-      <div class="boot-header-block">
-        <div class="boot-badge">SYSTEM INITIALIZATION</div>
-        <h1 class="boot-title">DLICOM ARENA // BOOT PROTOCOL v3.0</h1>
-        <div class="boot-sub">CYBER VOXEL WARFARE MATRIX · AUTHORITATIVE 30Hz CLUSTER</div>
-      </div>
-
-      <!-- Cyber Terminal Log & Progress Bar -->
-      <div class="boot-progress-cluster">
-        <div class="boot-status-row">
-          <span id="boot-status-text" class="boot-status-text">INITIALIZING VOXEL ENGINE...</span>
-          <span id="boot-percent-text" class="boot-percent-text">0%</span>
+    <div class="br-loading-content">
+      <!-- 1. Top Bar: Title & Online Telemetry -->
+      <header class="br-loading-topbar">
+        <div class="br-loading-brand">
+          <span class="br-online-dot"></span>
+          <span class="br-online-status">ONLINE</span>
+          <span class="br-brand-divider">//</span>
+          <h1 class="br-brand-title">DLICOM ARENA: CYBER WARFARE // v3.0</h1>
         </div>
-        <div class="boot-track">
-          <div id="boot-progress-bar" class="boot-fill" style="width: 0%;"></div>
+        <div class="br-loading-telemetry">
+          <span class="br-telemetry-icon">📶</span>
+          <span class="br-telemetry-ping" id="loading-ping-display">PING: 18ms</span>
+          <span class="br-telemetry-region">[US-EAST // 30Hz]</span>
         </div>
-      </div>
+      </header>
 
-      <!-- Action Button (Shown when loading hits 100%) -->
-      <button type="button" id="btn-enter-arena" class="btn-enter-boot hidden">
-        <span class="btn-enter-glow"></span>
-        <span class="btn-enter-icon">⚡</span>
-        <span class="btn-enter-label">TAP / CLICK TO INITIALIZE AUDIO & ENTER</span>
-        <span class="btn-enter-icon">▶</span>
-      </button>
+      <!-- 2. Center Stage: Battle Royale Dual Mascot Showcase -->
+      <main class="br-showcase-stage">
+        <div class="br-mascot-viewport">
+          <!-- 3D Perspective Cyber Treadmill / Light Trace Track -->
+          <div class="br-treadmill-container">
+            <div class="br-treadmill-plane">
+              <div class="br-treadmill-grid-lines"></div>
+              <div class="br-treadmill-rail rail-left"></div>
+              <div class="br-treadmill-rail rail-right"></div>
+              <div class="br-treadmill-center-trace"></div>
+            </div>
+            <div class="br-ground-glow glow-blue"></div>
+            <div class="br-ground-glow glow-red"></div>
+            <div class="br-mascot-contact-shadow shadow-blue"></div>
+            <div class="br-mascot-contact-shadow shadow-red"></div>
+          </div>
+
+          <!-- Dual Astronaut Mascots (Sky-Blue & Coral-Red) Running Vector Showcase -->
+          <svg class="br-mascots-svg" viewBox="0 0 520 270" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Sky-Blue and Coral-Red Cyber Mascots">
+            <defs>
+              <!-- Blue Mascot Caustic Gradients -->
+              <radialGradient id="blueGlassGrad" cx="38%" cy="32%" r="65%">
+                <stop offset="0%" stop-color="#ffffff" stop-opacity="0.85" />
+                <stop offset="25%" stop-color="#00f6ff" stop-opacity="0.55" />
+                <stop offset="60%" stop-color="#0284c7" stop-opacity="0.3" />
+                <stop offset="100%" stop-color="#0369a1" stop-opacity="0.75" />
+              </radialGradient>
+              <linearGradient id="blueCausticGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9" />
+                <stop offset="40%" stop-color="#00f6ff" stop-opacity="0.6" />
+                <stop offset="70%" stop-color="#38bdf8" stop-opacity="0.2" />
+                <stop offset="100%" stop-color="#0284c7" stop-opacity="0.8" />
+              </linearGradient>
+              <linearGradient id="blueSuitGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#38bdf8" />
+                <stop offset="45%" stop-color="#0284c7" />
+                <stop offset="100%" stop-color="#075985" />
+              </linearGradient>
+              <linearGradient id="blueFlameGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#ffffff" />
+                <stop offset="35%" stop-color="#00f6ff" />
+                <stop offset="80%" stop-color="#0284c7" stop-opacity="0.8" />
+                <stop offset="100%" stop-color="#0284c7" stop-opacity="0" />
+              </linearGradient>
+
+              <!-- Red Mascot Caustic Gradients -->
+              <radialGradient id="redGlassGrad" cx="38%" cy="32%" r="65%">
+                <stop offset="0%" stop-color="#ffffff" stop-opacity="0.85" />
+                <stop offset="25%" stop-color="#ff0055" stop-opacity="0.55" />
+                <stop offset="60%" stop-color="#f43f5e" stop-opacity="0.3" />
+                <stop offset="100%" stop-color="#be123c" stop-opacity="0.75" />
+              </radialGradient>
+              <linearGradient id="redCausticGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9" />
+                <stop offset="40%" stop-color="#ff0055" stop-opacity="0.6" />
+                <stop offset="70%" stop-color="#fb7185" stop-opacity="0.2" />
+                <stop offset="100%" stop-color="#e11d48" stop-opacity="0.8" />
+              </linearGradient>
+              <linearGradient id="redSuitGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#ff2d55" />
+                <stop offset="45%" stop-color="#e11d48" />
+                <stop offset="100%" stop-color="#9f1239" />
+              </linearGradient>
+              <linearGradient id="redFlameGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#ffffff" />
+                <stop offset="35%" stop-color="#ff0055" />
+                <stop offset="75%" stop-color="#f59e0b" stop-opacity="0.8" />
+                <stop offset="100%" stop-color="#f59e0b" stop-opacity="0" />
+              </linearGradient>
+
+              <!-- White Moon Boot Gradient -->
+              <linearGradient id="whiteBootGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#ffffff" />
+                <stop offset="65%" stop-color="#f1f5f9" />
+                <stop offset="100%" stop-color="#cbd5e1" />
+              </linearGradient>
+
+              <!-- Visor Background Gradient -->
+              <linearGradient id="visorGlassDark" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#0f172a" />
+                <stop offset="100%" stop-color="#020617" />
+              </linearGradient>
+
+              <!-- Filter for Visor Glow -->
+              <filter id="neonGlowCyan" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="2.5" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+              <filter id="neonGlowRed" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="2.5" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+
+            <!-- ================= MASCOT A: SKY-BLUE ASTRONAUT ================= -->
+            <g class="mascot-runner mascot-blue" transform="translate(145, 0)">
+              <!-- Backpack / Thruster Pack -->
+              <g class="mascot-backpack">
+                <rect x="-30" y="80" width="60" height="54" rx="10" fill="#0f172a" stroke="#00f6ff" stroke-width="2" />
+                <rect x="-24" y="86" width="48" height="12" rx="4" fill="#0284c7" />
+                <!-- Dual Nozzles -->
+                <rect x="-24" y="132" width="16" height="10" rx="3" fill="#334155" />
+                <rect x="8" y="132" width="16" height="10" rx="3" fill="#334155" />
+                <!-- Animated Thruster Flame -->
+                <polygon points="-22,142 -16,168 -10,142" fill="url(#blueFlameGrad)" class="br-flame-flicker" />
+                <polygon points="10,142 16,168 22,142" fill="url(#blueFlameGrad)" class="br-flame-flicker" />
+              </g>
+
+              <!-- Left Arm (Behind) -->
+              <g class="mascot-arm arm-left arm-cycle-a">
+                <rect x="-38" y="90" width="16" height="34" rx="8" fill="url(#blueSuitGrad)" stroke="#0284c7" stroke-width="1.5" />
+                <circle cx="-30" cy="128" r="9" fill="url(#whiteBootGrad)" stroke="#94a3b8" stroke-width="1.5" />
+              </g>
+
+              <!-- Left Leg (Behind) -->
+              <g class="mascot-leg leg-left leg-cycle-a">
+                <rect x="-24" y="138" width="18" height="36" rx="7" fill="url(#blueSuitGrad)" stroke="#0284c7" stroke-width="1.5" />
+                <!-- Knee Armor -->
+                <rect x="-25" y="148" width="20" height="10" rx="3" fill="#0369a1" />
+                <!-- Chunky White Astronaut Moon Boot -->
+                <path d="M-28 170 H-3 C-1 170 0 172 0 175 V188 C0 192 -3 194 -7 194 H-28 C-32 194 -34 191 -34 186 V176 C-34 172 -31 170 -28 170 Z" fill="url(#whiteBootGrad)" stroke="#94a3b8" stroke-width="1.5" />
+                <!-- Boot Sole (Charcoal + Glowing Cyan Tread) -->
+                <rect x="-34" y="190" width="34" height="4" rx="1.5" fill="#0f172a" />
+                <rect x="-33" y="192" width="32" height="2.5" rx="1" fill="#00f6ff" filter="url(#neonGlowCyan)" />
+              </g>
+
+              <!-- Torso / Spacesuit Body -->
+              <g class="mascot-body body-cycle-a">
+                <path d="M-28 84 C-28 78 28 78 28 84 L32 136 C32 144 24 148 14 148 H-14 C-24 148 -32 144 -32 136 Z" fill="url(#blueSuitGrad)" stroke="#0284c7" stroke-width="2" />
+                
+                <!-- White Chest Armor Crest with "D" Insignia -->
+                <path d="M-16 92 H16 L13 122 L0 130 L-13 122 Z" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5" />
+                <!-- Iconic Cyan "D" Insignia -->
+                <path d="M-6 99 H2 C7 99 9 102 9 108 C9 114 7 117 2 117 H-6 V99 Z M-3 103 V113 H1 C4 113 5 111 5 108 C5 105 4 103 1 103 Z" fill="#00f6ff" />
+                
+                <!-- Cyber Utility Belt -->
+                <rect x="-29" y="138" width="58" height="8" rx="2" fill="#0f172a" />
+                <rect x="-6" y="136" width="12" height="12" rx="3" fill="#00f6ff" filter="url(#neonGlowCyan)" />
+                <circle cx="-16" cy="142" r="2.5" fill="#38bdf8" />
+                <circle cx="16" cy="142" r="2.5" fill="#38bdf8" />
+              </g>
+
+              <!-- Right Leg (Foreground) -->
+              <g class="mascot-leg leg-right leg-cycle-b">
+                <rect x="6" y="138" width="18" height="36" rx="7" fill="url(#blueSuitGrad)" stroke="#0284c7" stroke-width="1.5" />
+                <!-- Knee Armor -->
+                <rect x="5" y="148" width="20" height="10" rx="3" fill="#0369a1" />
+                <!-- Chunky White Astronaut Moon Boot -->
+                <path d="M2 170 H27 C29 170 30 172 30 175 V188 C30 192 27 194 23 194 H2 C-2 194 -4 191 -4 186 V176 C-4 172 -1 170 2 170 Z" fill="url(#whiteBootGrad)" stroke="#94a3b8" stroke-width="1.5" />
+                <!-- Boot Sole (Charcoal + Glowing Cyan Tread) -->
+                <rect x="-4" y="190" width="34" height="4" rx="1.5" fill="#0f172a" />
+                <rect x="-3" y="192" width="32" height="2.5" rx="1" fill="#00f6ff" filter="url(#neonGlowCyan)" />
+              </g>
+
+              <!-- Right Arm (Foreground) -->
+              <g class="mascot-arm arm-right arm-cycle-b">
+                <rect x="22" y="90" width="16" height="34" rx="8" fill="url(#blueSuitGrad)" stroke="#0284c7" stroke-width="1.5" />
+                <circle cx="30" cy="128" r="9" fill="url(#whiteBootGrad)" stroke="#94a3b8" stroke-width="1.5" />
+              </g>
+
+              <!-- Head & Glass Bubble Helmet -->
+              <g class="mascot-head head-cycle-a">
+                <!-- Cute Comm Antenna with Green Beacon Light -->
+                <line x1="0" y1="10" x2="0" y2="2" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" />
+                <circle cx="0" cy="1" r="3.5" fill="#10b981" filter="drop-shadow(0 0 6px #10b981)" class="br-antenna-pulse" />
+
+                <!-- Helmet Neck Collar -->
+                <rect x="-24" y="74" width="48" height="12" rx="5" fill="#1e293b" stroke="#00f6ff" stroke-width="1.5" />
+
+                <!-- Outer Glass Bubble Sphere -->
+                <circle cx="0" cy="46" r="42" fill="url(#blueGlassGrad)" stroke="rgba(0, 246, 255, 0.85)" stroke-width="2.5" />
+                
+                <!-- Internal Liquid Caustic Pulse Arc -->
+                <ellipse cx="0" cy="46" rx="39" ry="39" fill="url(#blueCausticGrad)" class="br-caustic-shimmer" opacity="0.45" />
+
+                <!-- Tinted Dark Visor Screen Inside Dome -->
+                <rect x="-28" y="32" width="56" height="30" rx="13" fill="url(#visorGlassDark)" stroke="#00f6ff" stroke-width="1.5" />
+                <!-- Visor High-Tech Corner Ticks -->
+                <line x1="-24" y1="36" x2="-20" y2="36" stroke="#00f6ff" stroke-width="1.2" opacity="0.6" />
+                <line x1="20" y1="36" x2="24" y2="36" stroke="#00f6ff" stroke-width="1.2" opacity="0.6" />
+
+                <!-- Visor Expression 1: Focused > < -->
+                <g class="br-eyes-focused" filter="url(#neonGlowCyan)">
+                  <path d="M-17 42 L-9 47 L-17 52" stroke="#00f6ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+                  <path d="M17 42 L9 47 L17 52" stroke="#00f6ff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+                </g>
+
+                <!-- Visor Expression 2: Happy ^ ^ -->
+                <g class="br-eyes-happy" filter="url(#neonGlowCyan)">
+                  <path d="M-18 51 Q-13 41 -8 51" stroke="#00f6ff" stroke-width="3" stroke-linecap="round" fill="none" />
+                  <path d="M8 51 Q13 41 18 51" stroke="#00f6ff" stroke-width="3" stroke-linecap="round" fill="none" />
+                </g>
+
+                <!-- Glass Caustic Dome Specular Reflections (Curved White Highlights) -->
+                <path d="M-28 32 C-20 16 -3 10 18 14" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.85" />
+                <circle cx="27" cy="22" r="3" fill="#ffffff" opacity="0.8" />
+                <path d="M-26 56 C-24 66 -16 74 -6 78" stroke="#ffffff" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.4" />
+              </g>
+            </g>
+
+            <!-- ================= MASCOT B: CORAL-RED / CRIMSON ASTRONAUT ================= -->
+            <g class="mascot-runner mascot-red" transform="translate(375, 0)">
+              <!-- Backpack / Thruster Pack -->
+              <g class="mascot-backpack">
+                <rect x="-30" y="80" width="60" height="54" rx="10" fill="#0f172a" stroke="#ff0055" stroke-width="2" />
+                <rect x="-24" y="86" width="48" height="12" rx="4" fill="#e11d48" />
+                <!-- Dual Nozzles -->
+                <rect x="-24" y="132" width="16" height="10" rx="3" fill="#334155" />
+                <rect x="8" y="132" width="16" height="10" rx="3" fill="#334155" />
+                <!-- Animated Thruster Flame -->
+                <polygon points="-22,142 -16,168 -10,142" fill="url(#redFlameGrad)" class="br-flame-flicker" />
+                <polygon points="10,142 16,168 22,142" fill="url(#redFlameGrad)" class="br-flame-flicker" />
+              </g>
+
+              <!-- Left Arm (Behind) -->
+              <g class="mascot-arm arm-left arm-cycle-b">
+                <rect x="-38" y="90" width="16" height="34" rx="8" fill="url(#redSuitGrad)" stroke="#e11d48" stroke-width="1.5" />
+                <circle cx="-30" cy="128" r="9" fill="url(#whiteBootGrad)" stroke="#94a3b8" stroke-width="1.5" />
+              </g>
+
+              <!-- Left Leg (Behind) -->
+              <g class="mascot-leg leg-left leg-cycle-b">
+                <rect x="-24" y="138" width="18" height="36" rx="7" fill="url(#redSuitGrad)" stroke="#e11d48" stroke-width="1.5" />
+                <!-- Knee Armor -->
+                <rect x="-25" y="148" width="20" height="10" rx="3" fill="#be123c" />
+                <!-- Chunky White Astronaut Moon Boot -->
+                <path d="M-28 170 H-3 C-1 170 0 172 0 175 V188 C0 192 -3 194 -7 194 H-28 C-32 194 -34 191 -34 186 V176 C-34 172 -31 170 -28 170 Z" fill="url(#whiteBootGrad)" stroke="#94a3b8" stroke-width="1.5" />
+                <!-- Boot Sole (Charcoal + Glowing Coral Tread) -->
+                <rect x="-34" y="190" width="34" height="4" rx="1.5" fill="#0f172a" />
+                <rect x="-33" y="192" width="32" height="2.5" rx="1" fill="#ff0055" filter="url(#neonGlowRed)" />
+              </g>
+
+              <!-- Torso / Spacesuit Body -->
+              <g class="mascot-body body-cycle-b">
+                <path d="M-28 84 C-28 78 28 78 28 84 L32 136 C32 144 24 148 14 148 H-14 C-24 148 -32 144 -32 136 Z" fill="url(#redSuitGrad)" stroke="#e11d48" stroke-width="2" />
+                
+                <!-- White Chest Armor Crest with "D" Insignia -->
+                <path d="M-16 92 H16 L13 122 L0 130 L-13 122 Z" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5" />
+                <!-- Iconic Crimson "D" Insignia -->
+                <path d="M-6 99 H2 C7 99 9 102 9 108 C9 114 7 117 2 117 H-6 V99 Z M-3 103 V113 H1 C4 113 5 111 5 108 C5 105 4 103 1 103 Z" fill="#ff0055" />
+                
+                <!-- Cyber Utility Belt -->
+                <rect x="-29" y="138" width="58" height="8" rx="2" fill="#0f172a" />
+                <rect x="-6" y="136" width="12" height="12" rx="3" fill="#ff0055" filter="url(#neonGlowRed)" />
+                <circle cx="-16" cy="142" r="2.5" fill="#fb7185" />
+                <circle cx="16" cy="142" r="2.5" fill="#fb7185" />
+              </g>
+
+              <!-- Right Leg (Foreground) -->
+              <g class="mascot-leg leg-right leg-cycle-a">
+                <rect x="6" y="138" width="18" height="36" rx="7" fill="url(#redSuitGrad)" stroke="#e11d48" stroke-width="1.5" />
+                <!-- Knee Armor -->
+                <rect x="5" y="148" width="20" height="10" rx="3" fill="#be123c" />
+                <!-- Chunky White Astronaut Moon Boot -->
+                <path d="M2 170 H27 C29 170 30 172 30 175 V188 C30 192 27 194 23 194 H2 C-2 194 -4 191 -4 186 V176 C-4 172 -1 170 2 170 Z" fill="url(#whiteBootGrad)" stroke="#94a3b8" stroke-width="1.5" />
+                <!-- Boot Sole (Charcoal + Glowing Coral Tread) -->
+                <rect x="-4" y="190" width="34" height="4" rx="1.5" fill="#0f172a" />
+                <rect x="-3" y="192" width="32" height="2.5" rx="1" fill="#ff0055" filter="url(#neonGlowRed)" />
+              </g>
+
+              <!-- Right Arm (Foreground) -->
+              <g class="mascot-arm arm-right arm-cycle-a">
+                <rect x="22" y="90" width="16" height="34" rx="8" fill="url(#redSuitGrad)" stroke="#e11d48" stroke-width="1.5" />
+                <circle cx="30" cy="128" r="9" fill="url(#whiteBootGrad)" stroke="#94a3b8" stroke-width="1.5" />
+              </g>
+
+              <!-- Head & Glass Bubble Helmet -->
+              <g class="mascot-head head-cycle-b">
+                <!-- Cute Comm Antenna with Amber/Gold Beacon Light -->
+                <line x1="0" y1="10" x2="0" y2="2" stroke="#94a3b8" stroke-width="2.5" stroke-linecap="round" />
+                <circle cx="0" cy="1" r="3.5" fill="#f59e0b" filter="drop-shadow(0 0 6px #f59e0b)" class="br-antenna-pulse" />
+
+                <!-- Helmet Neck Collar -->
+                <rect x="-24" y="74" width="48" height="12" rx="5" fill="#1e293b" stroke="#ff0055" stroke-width="1.5" />
+
+                <!-- Outer Glass Bubble Sphere -->
+                <circle cx="0" cy="46" r="42" fill="url(#redGlassGrad)" stroke="rgba(255, 0, 85, 0.85)" stroke-width="2.5" />
+                
+                <!-- Internal Liquid Caustic Pulse Arc -->
+                <ellipse cx="0" cy="46" rx="39" ry="39" fill="url(#redCausticGrad)" class="br-caustic-shimmer" opacity="0.45" />
+
+                <!-- Tinted Dark Visor Screen Inside Dome -->
+                <rect x="-28" y="32" width="56" height="30" rx="13" fill="url(#visorGlassDark)" stroke="#ff0055" stroke-width="1.5" />
+                <!-- Visor High-Tech Corner Ticks -->
+                <line x1="-24" y1="36" x2="-20" y2="36" stroke="#ff0055" stroke-width="1.2" opacity="0.6" />
+                <line x1="20" y1="36" x2="24" y2="36" stroke="#ff0055" stroke-width="1.2" opacity="0.6" />
+
+                <!-- Visor Expression 1: Focused > < -->
+                <g class="br-eyes-focused" filter="url(#neonGlowRed)">
+                  <path d="M-17 42 L-9 47 L-17 52" stroke="#ff0055" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+                  <path d="M17 42 L9 47 L17 52" stroke="#ff0055" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+                </g>
+
+                <!-- Visor Expression 2: Happy ^ ^ -->
+                <g class="br-eyes-happy" filter="url(#neonGlowRed)">
+                  <path d="M-18 51 Q-13 41 -8 51" stroke="#ff0055" stroke-width="3" stroke-linecap="round" fill="none" />
+                  <path d="M8 51 Q13 41 18 51" stroke="#ff0055" stroke-width="3" stroke-linecap="round" fill="none" />
+                </g>
+
+                <!-- Glass Caustic Dome Specular Reflections (Curved White Highlights) -->
+                <path d="M-28 32 C-20 16 -3 10 18 14" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" fill="none" opacity="0.85" />
+                <circle cx="27" cy="22" r="3" fill="#ffffff" opacity="0.8" />
+                <path d="M-26 56 C-24 66 -16 74 -6 78" stroke="#ffffff" stroke-width="2" stroke-linecap="round" fill="none" opacity="0.4" />
+              </g>
+            </g>
+          </svg>
+        </div>
+      </main>
+
+      <!-- 3. Bottom Section: Tactical Tips & AAA Progress Bar -->
+      <footer class="br-loading-bottom">
+        <!-- Dynamic Tactical Tip Card -->
+        <div class="br-tip-card" id="br-tip-card">
+          <div class="br-tip-badge">
+            <span class="br-tip-bulb">💡</span>
+            <span class="br-tip-label">TACTICAL TIP</span>
+          </div>
+          <div class="br-tip-body" id="br-tip-text">
+            Headshots with the Cyber Sniper deal 2x critical damage for an instant knockout!
+          </div>
+        </div>
+
+        <!-- Terminal Status Ticker & ASCII Block Bar Readout -->
+        <div class="br-status-ticker-row">
+          <div class="br-status-left">
+            <span class="br-status-terminal-prefix">&gt;&gt;</span>
+            <span id="loading-status-text" class="br-status-text">CONNECTING TO VOXEL SERVERS...</span>
+          </div>
+          <div class="br-status-right">
+            <span id="loading-ascii-blocks" class="br-ascii-blocks">[░░░░░░░░░░]</span>
+            <span id="loading-percent-num" class="br-percent-num">0%</span>
+          </div>
+        </div>
+
+        <!-- High-Contrast Neon-Cyan Progress Track with Animated Diagonal Stripes -->
+        <div class="br-progress-track" id="br-progress-track">
+          <div id="loading-progress-fill" class="br-progress-fill" style="width: 0%;">
+            <div class="br-progress-glow-head"></div>
+          </div>
+        </div>
+
+        <!-- Audio Unlock Splash Button (Activated when loading hits 100%) -->
+        <button type="button" id="btn-enter-arena" class="br-btn-enter hidden" aria-label="Enter Lobby / Click to Start">
+          <span class="br-btn-shimmer"></span>
+          <span class="br-btn-icon-flash">⚡</span>
+          <span class="br-btn-text">ENTER LOBBY / CLICK TO START</span>
+          <span class="br-btn-icon-arrow">▶</span>
+        </button>
+      </footer>
     </div>
   </div>
 
