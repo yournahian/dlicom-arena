@@ -1813,59 +1813,60 @@
 
     <!-- ================= 10B. IN-GAME PAUSE / ESCAPE / EXIT MODAL ================= -->
     <div id="pauseMenu" class="pause-menu-mount">
-    <div id="in-game-pause-modal" class="modal-overlay hidden">
-      <div class="modal-dialog pause-dialog cyber-glass-card">
-        <div class="modal-header">
-          <div class="modal-title-wrap">
-            <span class="modal-glyph">⏸️</span>
-            <div>
-              <h2 class="modal-title">TACTICAL PAUSE</h2>
-              <p class="modal-subtitle">Combat Operations Suspended</p>
+      <div id="in-game-pause-modal" class="modal-overlay hidden">
+        <div class="modal-dialog pause-dialog cyber-glass-card">
+          <div class="modal-header">
+            <div class="modal-title-wrap">
+              <span class="modal-glyph">⏸️</span>
+              <div>
+                <h2 class="modal-title">TACTICAL PAUSE</h2>
+                <p class="modal-subtitle">Combat Operations Suspended</p>
+              </div>
             </div>
+            <button type="button" id="btn-close-pause-modal" class="modal-close-btn">&times;</button>
           </div>
-          <button type="button" id="btn-close-pause-modal" class="modal-close-btn">&times;</button>
-        </div>
 
-        <div class="modal-body pause-body">
-          <button type="button" id="btn-resume-match" class="btn-pause-action btn-resume">
-            <span class="btn-icon">▶️</span>
-            <span>RESUME MATCH</span>
-          </button>
+          <div class="modal-body pause-body">
+            <button type="button" id="btn-resume-match" class="btn-pause-action btn-resume">
+              <span class="btn-icon">▶️</span>
+              <span>RESUME MATCH</span>
+            </button>
 
-          <div class="pause-settings-box">
-            <h4 class="settings-section-title">COMBAT SETTINGS</h4>
-            
-            <div class="settings-group">
-              <label class="settings-label">MASTER AUDIO</label>
-              <div class="settings-control-row">
-                <span>Sound Synthesis & FX</span>
-                <button type="button" id="btn-pause-audio-toggle" class="btn-settings-toggle">AUDIO: ON</button>
+            <div class="pause-settings-box">
+              <h4 class="settings-section-title">COMBAT SETTINGS</h4>
+              
+              <div class="settings-group">
+                <label class="settings-label">MASTER AUDIO</label>
+                <div class="settings-control-row">
+                  <span>Sound Synthesis & FX</span>
+                  <button type="button" id="btn-pause-audio-toggle" class="btn-settings-toggle">AUDIO: ON</button>
+                </div>
+              </div>
+
+              <div class="settings-group">
+                <label class="settings-label">MOUSE LOOK SENSITIVITY</label>
+                <div class="settings-slider-row">
+                  <input type="range" id="pause-sensitivity-slider" min="1" max="10" value="5" class="cyber-slider">
+                  <span id="pause-sensitivity-val" class="slider-val">5.0</span>
+                </div>
+              </div>
+
+              <div class="settings-group">
+                <label class="settings-label">MOBILE TOUCH CONTROLS</label>
+                <div class="settings-control-row">
+                  <span>Customize Button Layout, Scale & Opacity</span>
+                  <button type="button" id="btn-pause-custom-hud" class="btn-settings-action-hud">⚙️ CUSTOMIZE BUTTONS / HUD</button>
+                </div>
               </div>
             </div>
 
-            <div class="settings-group">
-              <label class="settings-label">MOUSE LOOK SENSITIVITY</label>
-              <div class="settings-slider-row">
-                <input type="range" id="pause-sensitivity-slider" min="1" max="10" value="5" class="cyber-slider">
-                <span id="pause-sensitivity-val" class="slider-val">5.0</span>
-              </div>
-            </div>
-
-            <div class="settings-group">
-              <label class="settings-label">MOBILE TOUCH CONTROLS</label>
-              <div class="settings-control-row">
-                <span>Customize Button Layout, Scale & Opacity</span>
-                <button type="button" id="btn-pause-custom-hud" class="btn-settings-action-hud">⚙️ CUSTOMIZE BUTTONS / HUD</button>
-              </div>
-            </div>
-
-          <button type="button" id="btn-leave-match" class="btn-pause-action btn-leave-match">
-            <span class="btn-icon">🚪</span>
-            <span>LEAVE MATCH / EXIT TO LOBBY</span>
-          </button>
+            <button type="button" id="btn-leave-match" class="btn-pause-action btn-leave-match">
+              <span class="btn-icon">🚪</span>
+              <span>LEAVE MATCH / EXIT TO LOBBY</span>
+            </button>
+          </div>
         </div>
       </div>
-    </div>
     </div>
 
     <!-- ================= 10C. DEDICATED BR DEATH / ELIMINATION SCREEN (PHASE 4) ================= -->
@@ -1891,65 +1892,65 @@
     </div>
 
     <!-- ================= 11. MATCH END OVERLAY ================= -->
-    <div id="victoryScreen" class="victory-screen-mount">
-    <div id="match-end-modal" class="modal-overlay hidden">
-      <div class="match-end-card cyber-glass-card">
-        <div class="end-header">
-          <div id="end-victory-banner" class="end-banner">VICTORY ROYALE #1</div>
-          <div id="end-sub-banner" class="end-sub">MATCH CONCLUDED</div>
-        </div>
+    <div id="victoryScreen" class="victory-screen-mount hidden" style="display: none;">
+      <div id="match-end-modal" class="modal-overlay hidden">
+        <div class="match-end-card cyber-glass-card">
+          <div class="end-header">
+            <div id="end-victory-banner" class="end-banner">VICTORY ROYALE #1</div>
+            <div id="end-sub-banner" class="end-sub">MATCH CONCLUDED</div>
+          </div>
 
-        <div class="end-stats-grid">
-          <div class="end-stat-box">
-            <span class="es-val" id="end-stat-kills">0</span>
-            <span class="es-lbl">KILLS</span>
+          <div class="end-stats-grid">
+            <div class="end-stat-box">
+              <span class="es-val" id="end-stat-kills">0</span>
+              <span class="es-lbl">KILLS</span>
+            </div>
+            <div class="end-stat-box">
+              <span class="es-val" id="end-stat-damage">0</span>
+              <span class="es-lbl">DAMAGE DEALT</span>
+            </div>
+            <div class="end-stat-box">
+              <span class="es-val" id="end-stat-time">00:00</span>
+              <span class="es-lbl">TIME SURVIVED</span>
+            </div>
+            <div class="end-stat-box">
+              <span class="es-val" id="end-stat-score">0</span>
+              <span class="es-lbl">SCORE</span>
+            </div>
           </div>
-          <div class="end-stat-box">
-            <span class="es-val" id="end-stat-damage">0</span>
-            <span class="es-lbl">DAMAGE DEALT</span>
-          </div>
-          <div class="end-stat-box">
-            <span class="es-val" id="end-stat-time">00:00</span>
-            <span class="es-lbl">TIME SURVIVED</span>
-          </div>
-          <div class="end-stat-box">
-            <span class="es-val" id="end-stat-score">0</span>
-            <span class="es-lbl">SCORE</span>
-          </div>
-        </div>
 
-        <!-- Leaderboard Table -->
-        <div class="end-leaderboard-wrap">
-          <div class="lb-title">MATCH LEADERBOARD</div>
-          <table class="lb-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>OPERATOR</th>
-                <th>TEAM</th>
-                <th>KILLS</th>
-                <th>DEATHS</th>
-                <th>SCORE</th>
-              </tr>
-            </thead>
-            <tbody id="end-leaderboard-rows">
-              <!-- Populated dynamically -->
-            </tbody>
-          </table>
-        </div>
+          <!-- Leaderboard Table -->
+          <div class="end-leaderboard-wrap">
+            <div class="lb-title">MATCH LEADERBOARD</div>
+            <table class="lb-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>OPERATOR</th>
+                  <th>TEAM</th>
+                  <th>KILLS</th>
+                  <th>DEATHS</th>
+                  <th>SCORE</th>
+                </tr>
+              </thead>
+              <tbody id="end-leaderboard-rows">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
 
-        <div class="end-footer-actions">
-          <button type="button" id="btn-end-return-lobby" class="btn-action-secondary">
-            <span>← RETURN TO LOBBY</span>
-          </button>
-          <button type="button" id="btn-end-rematch" class="btn-action-primary btn-rematch">
-            <span>PLAY AGAIN / REMATCH ▶</span>
-          </button>
+          <div class="end-footer-actions">
+            <button type="button" id="btn-end-return-lobby" class="btn-action-secondary">
+              <span>← RETURN TO LOBBY</span>
+            </button>
+            <button type="button" id="btn-end-rematch" class="btn-action-primary btn-rematch">
+              <span>PLAY AGAIN / REMATCH ▶</span>
+            </button>
+          </div>
         </div>
+        <!-- Confetti / Particle Fountain for Victory Royale -->
+        <canvas id="victory-confetti-canvas" class="victory-confetti-canvas hidden"></canvas>
       </div>
-      <!-- Confetti / Particle Fountain for Victory Royale -->
-      <canvas id="victory-confetti-canvas" class="victory-confetti-canvas hidden"></canvas>
-    </div>
     </div>
 
   </div>

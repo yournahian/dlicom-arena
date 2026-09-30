@@ -8839,5 +8839,7 @@ class CyberWarfareClient {
 // Instantiate Client Engine on DOM Ready
 window.addEventListener('DOMContentLoaded', () => {
   window.gameClient = new CyberWarfareClient();
+  window.game = window.gameClient;
   window.returnToLobby = () => window.gameClient?.returnToLobby();
 });
+

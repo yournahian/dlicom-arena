@@ -4366,8 +4366,45 @@ body.platform-mobile .start-subtext {
 }
 
 /* ==========================================================================
-   9. MATCH END OVERLAY
+   9. MATCH END OVERLAY & ELIMINATION OVERLAY
    ========================================================================== */
+#victoryScreen,
+.victory-screen-mount {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+#match-end-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 2001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(3, 7, 18, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  pointer-events: auto !important;
+}
+
+#deathScreen {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 2, 5, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  pointer-events: auto !important;
+}
+
 .match-end-card {
   width: 760px;
   max-width: 95vw;
